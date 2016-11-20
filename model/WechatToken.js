@@ -1,7 +1,7 @@
 var AV = require('leanengine');
 
-var WechatTokenName = 'WechatToken';
-var WechatToken = AV.Object.extend(WechatTokenName);
+var WechatTokenName = require('../constants/constants').WECHAT_TOKEN_TABLE_NAME;
+var WechatTokenAV = AV.Object.extend(WechatTokenName);
 
 /**
  * var TokenSchema = new Schema({
@@ -14,28 +14,20 @@ var WechatToken = AV.Object.extend(WechatTokenName);
  *});
  */
 var WechatToken = function () {
-  this.token = new WechatToken();
+  this.token = new WechatTokenAV();
 }
 
 WechatToken.prototype.create = function (token) {
-  var access_token = token.access_token;
-  var expires_in = token.expires_in;
-  var refresh_token = token.refresh_token;
-  var openid = token.openid;
-  var scope = token.scope;
-  var create_at = token.create_at;
-
-  this.token.set('access_token', access_token);
-  this.token.set('expires_in', expires_in);
-  this.token.set('refresh_token', refresh_token);
-  this.token.set('openid', openid);
-  this.token.set('scope', scope);
-  this.token.set('create_at', create_at);
+  for (key in token) {
+    if (token.hasOwnProperty(key)) {
+      this.token.set(key, token[key]);
+    }
+  }
 
   return this.token.save().then(function (token) {
     this.token = token;
     return Promise.resolve(this.token);
-  });
+  }.bind(this));
 }
 
 WechatToken.prototype.update = function (token) {
@@ -68,12 +60,12 @@ WechatToken.prototype.update = function (token) {
        sql += ' create_at=' + create_at;
     }
 
-    sql += ' where objectId=' + this.token.id;
+    sql += ' where objectId=' + this.token.objectId;
 
     return AV.Query.doCloudQuery(sql).then(function (updatedToken) {
       this.token = updatedToken;
       return Promise.resolve(this.token);
-    });
+    }.bind(this));
   }
 }
 
