@@ -54,8 +54,8 @@ var getLastTokenFromDB = function () {
   query.descending('updatedAt');
   return new Promise(function (resolve, reject) {
     query.first().then(function (token) {
-      var formatedToken = {objectId: token.id, createdAt: token.createdAt, updatedAt: token.updatedAt};
       if (token && token._hasData) {
+        var formatedToken = {objectId: token.id, createdAt: token.createdAt, updatedAt: token.updatedAt};
         for (var key in token._serverData) {
           if (token._serverData.hasOwnProperty(key)) {
             formatedToken[key] = token._serverData[key];
