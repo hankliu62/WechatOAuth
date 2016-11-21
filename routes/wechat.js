@@ -232,7 +232,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
         appid: wechatConfig.appid,
         ticket: ticketSrc,
         noncestr: noncestr,
-        timestamp: timestamp,
+        timestamp: timestamp + '',
         url: url,
         expires_in: data.expires_in,
         signature: signature,
