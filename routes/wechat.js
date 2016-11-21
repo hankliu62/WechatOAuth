@@ -107,8 +107,8 @@ var getLastTicketFromDB = function (url) {
   query.descending('updatedAt');
   return new Promise(function (resolve, reject) {
     query.first().then(function (ticket) {
-      var formatedTicket = {objectId: ticket.id, createdAt: ticket.createdAt, updatedAt: ticket.updatedAt};
       if (ticket && ticket._hasData) {
+        var formatedTicket = {objectId: ticket.id, createdAt: ticket.createdAt, updatedAt: ticket.updatedAt};
         for (var key in ticket._serverData) {
           if (ticket._serverData.hasOwnProperty(key)) {
             formatedTicket[key] = ticket._serverData[key];
@@ -125,7 +125,7 @@ var getLastTicketFromDB = function (url) {
     });
   });
 }
-var getTicketFromWechat = function (accessToken) {
+var getTicketFromWechat = function () {
   return new Promise(function (resolve, reject) {
     getToken().then(function (result) {
       if (result.response) {
@@ -152,10 +152,10 @@ var getTicketFromWechat = function (accessToken) {
   });
 };
 
-var getTicket = function (url) {
+var getTicket = function (url, isdebug) {
   return new Promise(function (resolve, reject) {
     getLastTicketFromDB(url).then(function (ticket) {
-      if (!ticket || !WechatUtil.isValid(ticket)) {
+      if (!ticket || !WechatUtil.isValid(ticket) || isdebug) {
         getTicketFromWechat().then(function (result) {
           resolve(result);
         });
@@ -163,6 +163,7 @@ var getTicket = function (url) {
         resolve({ error: null, response: null, data: ticket });
       }
     }, function () {
+
       getTicketFromWechat().then(function (result) {
         resolve(result);
       });
@@ -203,7 +204,7 @@ router.use('/get_token', function (req, res, next) {
 });
 
 router.get('/get_jssdk_signature', function (req, res, next){
-  var url = req.body.url;
+  var url = req.query.url;
   getTicket(url).then(function (result) {
     var error = result.error;
     var response = result.response;
