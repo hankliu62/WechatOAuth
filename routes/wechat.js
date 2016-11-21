@@ -225,7 +225,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
       var current = new Date();
       var ticketSrc = data.ticket;
       var noncestr = WechatUtil.createNonceStr();
-      var timestamp = current.getTime() + '';
+      var timestamp = current.getTime();
       var signature = WechatUtil.createSignature(ticketSrc, noncestr, timestamp, url);
       var newTicket = {
         appid: wechatConfig.appid,
