@@ -242,15 +242,57 @@ router.get('/get_jssdk_signature', function (req, res, next){
       var wechatTicket = new WechatTicket();
 
       wechatTicket.create(newTicket).then(function (ticket) {
-        res.status(response.statusCode).send({ error: null, data: {
-          signature: ticket } });
+
+        res.status(response.statusCode).send({ error: null, data: { signature: {
+          signature: ticket.get('signature'),
+          noncestr: ticket.get('noncestr'),
+          timestamp: ticket.get('timestamp')
+        } } });
       }).catch(next);
       return;
     }
 
     if (data) {
-      res.status(200).send({ error: null, data: { signature: data } });
+      console.log(data);
+      res.status(200).send({ error: null, data: { signature: {
+        signature: typeof data.get === 'function' ? data.get('signature') : data.signature,
+        noncestr: typeof data.get === 'function' ? data.get('noncestr') : data.noncestr,
+        timestamp: typeof data.get === 'function' ? data.get('timestamp') : data.timestamp
+      } } });
     }
+  });
+});
+
+router.delete('/clear_expires_signature', function(request, response, next) {
+  var current = new Date();
+  var query = new AV.Query(WechatTicketName);
+  query.ascending('updatedAt');
+  query.lessThan('updatedAt', current.toISOString());
+  query.find().then(function(results) {
+    var removeSignatures = [];
+    for (var signature of results) {
+      if (signature && (signature.expires_in || signature._serverData.expires_in)) {
+        var updatedAt = new Date(signature.updatedAt).getTime();
+        var currentAt = current.getTime();
+        var expires_in = parseInt(signature.expires_in || signature._serverData.expires_in, 10);
+
+        if (currentAt > (createAt + expires_in * 1000)) {
+          removeSignatures.push(signature);
+        }
+      } else {
+        removeSignatures.push(signature);
+      }
+    }
+    // 批量删除
+    AV.Object.destroyAll(removeSignatures).then(function () {
+      // 成功
+      response.send('Clear expires wechat signature success!');
+    }, function (error) {
+      // 异常处理
+      var logger = log4js.getLogger('LeanStorage');
+      logger.error(error);
+      response.send('Clear expires wechat signature fail!');
+    }).catch(next);
   });
 });
 
