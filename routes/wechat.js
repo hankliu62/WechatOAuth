@@ -205,13 +205,16 @@ router.use('/get_token', function (req, res, next) {
 
 router.get('/get_jssdk_signature', function (req, res, next){
   var url = req.query.url;
+  var callback = req.query.callback;
+  var sendKey = callback ? 'jsonp' : 'send';
+  res.setHeader("Access-Control-Allow-Origin", "*");
   getTicket(url).then(function (result) {
     var error = result.error;
     var response = result.response;
     var data = result.data;
 
     if (error) {
-      res.status(response.statusCode).send(result);
+      res.status(response.statusCode)[sendKey](result);
       return;
     }
 
@@ -219,7 +222,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
       if (data.errcode) {
         var logger = log4js.getLogger('Wechat');
         logger.error(data);
-        res.status(response.statusCode).send({ error: data, response: response,
+        res.status(response.statusCode)[sendKey]({ error: data, response: response,
           body: data });
       }
 
@@ -242,14 +245,14 @@ router.get('/get_jssdk_signature', function (req, res, next){
       var wechatTicket = new WechatTicket();
 
       wechatTicket.create(newTicket).then(function (ticket) {
-        res.status(response.statusCode).send({ error: null, data: {
+        res.status(response.statusCode)[sendKey]({ error: null, data: {
           signature: ticket } });
       }).catch(next);
       return;
     }
 
     if (data) {
-      res.status(200).send({ error: null, data: { signature: data } });
+      res.status(200)[sendKey]({ error: null, data: { signature: data } });
     }
   });
 });
