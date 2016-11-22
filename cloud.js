@@ -34,7 +34,7 @@ AV.Cloud.define('clear_expires_token', function(request, response) {
     // 批量删除
     AV.Object.destroyAll(removeTokens).then(function () {
       // 成功
-      esponse.success('Clear expires wechat token success!');
+      response.success('Clear expires wechat token success!');
     }, function (error) {
       // 异常处理
       var logger = log4js.getLogger('LeanStorage');
@@ -67,7 +67,7 @@ AV.Cloud.define('clear_expires_signature', function(request, response) {
     // 批量删除
     AV.Object.destroyAll(removeSignatures).then(function () {
       // 成功
-      esponse.success('Clear expires wechat signature success!');
+      response.success('Clear expires wechat signature success!');
     }, function (error) {
       // 异常处理
       var logger = log4js.getLogger('LeanStorage');
