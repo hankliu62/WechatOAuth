@@ -1,6 +1,9 @@
+var TableNames = require('./TableNames');
+var StatusCodes = require('./StatusCodes');
+
 const constants = {
-  WECHAT_TOKEN_TABLE_NAME: 'WechatToken',
-  WECHAt_TICKET_TABLE_NAME: 'WechatTicket'
+  TableNames: TableNames,
+  StatusCodes: StatusCodes
 };
 
 module.exports = constants;
