@@ -11,6 +11,7 @@ var WechatTokenName = require('../constants/constants').WECHAT_TOKEN_TABLE_NAME;
 var WechatTicketName = require('../constants/constants').WECHAt_TICKET_TABLE_NAME;
 // var WechatToken = AV.Object.extend(WechatTokenName);
 var WechatUtil = require('../utils/WechatUtil');
+
 router.get('/check_signature', function (req, res, next) {
   var signature = req.query.signature;
   var timestamp = req.query.timestamp;
@@ -49,6 +50,7 @@ var createToken = function (token) {
   var wechatToken = new WechatToken();
   return wechatToken.create(token);
 }
+
 var getLastTokenFromDB = function () {
   var query = new AV.Query(WechatTokenName);
   query.descending('updatedAt');
@@ -72,6 +74,7 @@ var getLastTokenFromDB = function () {
     });
   });
 };
+
 var getTokenFromWechat = function () {
   var url = wechatConfig.api_domain + '/cgi-bin/token?grant_type=client_credential&appid=' +
     wechatConfig.appid + '&secret=' + wechatConfig.appsecret;
@@ -125,6 +128,7 @@ var getLastTicketFromDB = function (url) {
     });
   });
 }
+
 var getTicketFromWechat = function () {
   return new Promise(function (resolve, reject) {
     getToken().then(function (result) {
@@ -170,6 +174,7 @@ var getTicket = function (url, isdebug) {
     });
   });
 }
+
 router.use('/get_token', function (req, res, next) {
   // query last token from db, check the token is valid, if not, request from wechat api
   getToken().then(function (result) {
@@ -244,6 +249,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
       wechatTicket.create(newTicket).then(function (ticket) {
 
         res.status(response.statusCode).send({ error: null, data: { signature: {
+          appid: ticket.get('appid'),
           signature: ticket.get('signature'),
           noncestr: ticket.get('noncestr'),
           timestamp: ticket.get('timestamp')
@@ -255,6 +261,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
     if (data) {
       console.log(data);
       res.status(200).send({ error: null, data: { signature: {
+        appid: typeof data.get === 'function' ? ticket.get('appid') : data.appid,
         signature: typeof data.get === 'function' ? data.get('signature') : data.signature,
         noncestr: typeof data.get === 'function' ? data.get('noncestr') : data.noncestr,
         timestamp: typeof data.get === 'function' ? data.get('timestamp') : data.timestamp
