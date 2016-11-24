@@ -71,7 +71,7 @@ AV.Cloud.define('clear_expires_token', function(request, response) {
   query.find().then(queryResolveHandler, queryRejectHandler);
 });
 
-AV.Cloud.define('/clear_expires_signature', function(request, response) {
+AV.Cloud.define('clear_expires_signature', function(request, response) {
   var current = new Date();
   var query = new AV.Query(WechatTicketName);
   query.ascending('updatedAt');
