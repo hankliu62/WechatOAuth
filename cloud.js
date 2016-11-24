@@ -1,8 +1,13 @@
 var AV = require('leanengine');
 var log4js = require('log4js');
 
-var WechatTokenName = require('./constants/constants').WECHAT_TOKEN_TABLE_NAME;
-var WechatTicketName = require('./constants/constants').WECHAt_TICKET_TABLE_NAME;
+var CONSTANTS = require('./constants/Constants');
+
+var leanStorageLogger = log4js.getLogger('LeanStorage');
+var WechatTokenName = CONSTANTS.TableNames.WECHAT_TOKEN_TABLE_NAME;
+var WechatTicketName = CONSTANTS.TableNames.WECHAt_TICKET_TABLE_NAME;
+var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
+var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
 
 /**
  * 一个简单的云代码方法
@@ -11,70 +16,68 @@ AV.Cloud.define('hello', function(request, response) {
   response.success('Hello world!');
 });
 
+var handlerQueryResolve = function (type) {
+  return function (results) {
+    var removeItems = [];
+    for (var item of results) {
+      if (item && item.updatedAt && item.get('expires_in')) {
+        var expires_in = parseInt(item.get('expires_in'), 10);
+        var updatedAt = new Date(item.updatedAt).getTime();
+        var currentAt = current.getTime();
+
+        if (currentAt > (updatedAt + expires_in * 1000)) {
+          removeItems.push(item);
+        }
+      } else {
+        removeItems.push(item);
+      }
+    }
+
+    if (removeItems.length) {
+      // 批量删除
+      var data = {};
+      data[type] = removeItems;
+
+      AV.Object.destroyAll(removeItems).then(function () {
+        // 成功
+        data.message = 'success';
+        response.send({ error: null, statusCode: SUCCESS_CODE, data: data });
+      }, function (error) {
+        // 异常处理
+        leanStorageLogger.error(error);
+        data.message = 'fail';
+        response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: data });
+      });
+    } else {
+      response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'has not expired ' + type } });
+    }
+  }
+}
+
+var handlerQueryReject = function (type) {
+  return function (error) {
+    // 异常处理
+    leanStorageLogger.error(error);
+    response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { message: 'Clear expires wechat ' + type + ' fail!' } });
+  }
+}
+
 AV.Cloud.define('clear_expires_token', function(request, response) {
   var current = new Date();
   var query = new AV.Query(WechatTokenName);
   query.ascending('updatedAt');
-  query.lessThan('updatedAt', current.toISOString());
-  query.find().then(function(results) {
-    var removeTokens = [];
-    for (var token of results) {
-      if (token && (token.expires_in || token._serverData.expires_in)) {
-        var updatedAt = new Date(token.updatedAt).getTime();
-        var currentAt = current.getTime();
-        var expires_in = parseInt(token.expires_in || token._serverData.expires_in, 10);
-
-        if (currentAt > (createAt + expires_in * 1000)) {
-          removeTokens.push(token);
-        }
-      } else {
-        removeTokens.push(token);
-      }
-    }
-    // 批量删除
-    AV.Object.destroyAll(removeTokens).then(function () {
-      // 成功
-      response.success('Clear expires wechat token success!');
-    }, function (error) {
-      // 异常处理
-      var logger = log4js.getLogger('LeanStorage');
-      logger.error(error);
-      response.success('Clear expires wechat token fail!');
-    });
-  });
+  var queryResolveHandler = handlerQueryResolve('token');
+  var queryRejectHandler = handlerQueryReject('token')
+  query.find().then(queryResolveHandler, queryRejectHandler);
 });
 
-AV.Cloud.define('clear_expires_signature', function(request, response) {
+AV.Cloud.define('/clear_expires_signature', function(request, response) {
   var current = new Date();
   var query = new AV.Query(WechatTicketName);
   query.ascending('updatedAt');
-  query.lessThan('updatedAt', current.toISOString());
-  query.find().then(function(results) {
-    var removeSignatures = [];
-    for (var signature of results) {
-      if (signature && (signature.expires_in || signature._serverData.expires_in)) {
-        var updatedAt = new Date(signature.updatedAt).getTime();
-        var currentAt = current.getTime();
-        var expires_in = parseInt(signature.expires_in || signature._serverData.expires_in, 10);
-
-        if (currentAt > (createAt + expires_in * 1000)) {
-          removeSignatures.push(signature);
-        }
-      } else {
-        removeSignatures.push(signature);
-      }
-    }
-    // 批量删除
-    AV.Object.destroyAll(removeSignatures).then(function () {
-      // 成功
-      response.success('Clear expires wechat signature success!');
-    }, function (error) {
-      // 异常处理
-      var logger = log4js.getLogger('LeanStorage');
-      logger.error(error);
-      response.success('Clear expires wechat signature fail!');
-    });
-  });
+  var queryResolveHandler = handlerQueryResolve('signature');
+  var queryRejectHandler = handlerQueryReject('signature')
+  query.find().then(queryResolveHandler, queryRejectHandler);
 });
 
 module.exports = AV.Cloud;

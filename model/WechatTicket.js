@@ -1,5 +1,5 @@
 var AV = require('leanengine');
-var CONSTANTS = require('../constants/constants');
+var CONSTANTS = require('../constants/Constants');
 
 var WechatTicketName = CONSTANTS.TableNames.WECHAt_TICKET_TABLE_NAME;
 var TicketTokenAV = AV.Object.extend(WechatTicketName);
