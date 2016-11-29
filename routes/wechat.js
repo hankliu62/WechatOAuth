@@ -15,7 +15,6 @@ var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
 // var WechatToken = AV.Object.extend(WechatTokenName);
 var WechatUtil = require('../utils/WechatUtil');
 
-
 //设置跨域访问
 router.all('*', function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -25,6 +24,7 @@ router.all('*', function(req, res, next) {
   res.header("Content-Type", "application/json;charset=utf-8");
   next();
 });
+
 router.get('/check_signature', function (req, res, next) {
   var signature = req.query.signature;
   var timestamp = req.query.timestamp;
