@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 var todos = require('./routes/todos');
 var wechat = require('./routes/wechat');
 var jsonp = require('./routes/jsonp');
+var agwebhook = require('./routes/agwebhook');
 var AV = require('leanengine');
 
 var app = express();
@@ -36,6 +37,7 @@ app.get('/', function(req, res) {
 app.use('/todos', todos);
 app.use('/wechat', wechat);
 app.use('/jsonp', jsonp);
+app.use('/agwebhook', agwebhook);
 
 app.use(function(req, res, next) {
   // 如果任何一个路由都没有返回响应，则抛出一个 404 异常给后续的异常处理器
