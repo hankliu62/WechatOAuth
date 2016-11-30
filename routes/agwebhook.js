@@ -12,7 +12,7 @@ router.all('*', function(req, res, next) {
 });
 
 router.post('/check_webhook_signature', function (req, res, next) {
-  var type = req.query.type;
+  var type = req.body.type;
 
   if (type === 'ping') {
     res.status(200).send('pong');
