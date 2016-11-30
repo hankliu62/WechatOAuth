@@ -10,6 +10,7 @@ var WechatTicket = require('../model/WechatTicket');
 var CONSTANTS = require('../constants/Constants');
 var WechatTokenName = CONSTANTS.TableNames.WECHAT_TOKEN_TABLE_NAME;
 var WechatTicketName = CONSTANTS.TableNames.WECHAt_TICKET_TABLE_NAME;
+var WechatConfigName = CONSTANTS.TableNames.WECHAt_TICKET_TABLE_NAME;
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
 // var WechatToken = AV.Object.extend(WechatTokenName);
@@ -30,7 +31,7 @@ router.get('/check_signature', function (req, res, next) {
   var timestamp = req.query.timestamp;
   var nonce = req.query.nonce;
   var echostr = req.query.echostr;
-  var token = wechatConfig.token;
+  var token = req.query.token;
 
   /*  加密/校验流程如下： */
   //1. 将token、timestamp、nonce三个参数进行字典序排序
