@@ -4,6 +4,8 @@ var request = require('request');
 var AV = require('leanengine');
 var log4js = require('log4js');
 
+var leanStorageLogger = log4js.getLogger('LeanStorage');
+var wechatLogger = log4js.getLogger('Wechat');
 var wechatConfig = require('../config/wechat');
 var WechatToken = require('../model/WechatToken');
 var WechatTicket = require('../model/WechatTicket');
@@ -13,6 +15,7 @@ var WechatTicketName = CONSTANTS.TableNames.WECHAt_TICKET_TABLE_NAME;
 var WechatConfigName = CONSTANTS.TableNames.WECHAT_CONFIG_TABLE_NAME;
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
+var NOT_FOUND_CODE = CONSTANTS.StatusCodes.NOT_FOUND;
 // var WechatToken = AV.Object.extend(WechatTokenName);
 var WechatUtil = require('../utils/WechatUtil');
 
@@ -50,28 +53,46 @@ router.get('/check_signature', function (req, res, next) {
   }
 });
 
-var handWechatResponse = function (error, response, body) {
-  const data = JSON.parse(body);
-  var code = SUCCESS_CODE;
-  if (error) {
-    var logger = log4js.getLogger('Wechat');
-    logger.error(error);
-    code = SERVER_ERROR_CODE;
-  }
-  return { error: error, statusCode: code, response: response, body: body, data: data };
-};
-
 var createToken = function (token) {
   token.create_at = new Date().toISOString();
   var wechatToken = new WechatToken();
   return wechatToken.create(token);
 }
 
+var fetchWechatConfig = function (appid) {
+  var query = new AV.Query(WechatConfigName);
+  query.equalTo('appid', appid);
+  return new Promise(function (reslove, reject) {
+    var querySuccessHandler = function (config) {
+      if (config && config._hasData) {
+        var wechatConfig = {objectId: config.id, createdAt: config.createdAt, updatedAt: config.updatedAt};
+        for (var key in config._serverData) {
+          if (config._serverData.hasOwnProperty(key)) {
+            wechatConfig[key] = config._serverData[key];
+          }
+        }
+        resolve(wechatConfig);
+      } else {
+        const body = { appid: appid, errorMessage: 'Not Found' };
+        reject({ error: new Error('Not Fount'), statusCode: NOT_FOUND_CODE, response: null, body: body, data: body });
+      }
+    }
+
+    var queryFailHandler = function (error) {
+      leanStorageLogger.error(error);
+      const body = { appid: appid };
+      reject({ error: error, statusCode: SERVER_ERROR_CODE, response: null, body: body, data: body });
+    }
+
+    query.first().then(querySuccessHandler, queryFailHandler);
+  });
+}
+
 var getLastTokenFromDB = function () {
   var query = new AV.Query(WechatTokenName);
   query.descending('updatedAt');
   return new Promise(function (resolve, reject) {
-    query.first().then(function (token) {
+    var querySuccessHandler = function (token) {
       if (token && token._hasData) {
         var formatedToken = {objectId: token.id, createdAt: token.createdAt, updatedAt: token.updatedAt};
         for (var key in token._serverData) {
@@ -81,42 +102,62 @@ var getLastTokenFromDB = function () {
         }
         resolve(formatedToken);
       } else {
-        reject();
+        const body = { errorMessage: 'Not Found' };
+        reject({ error: new Error('Not Fount'), statusCode: NOT_FOUND_CODE, response: null, body: body, data: body });
       }
-    }, function (error) {
-      var logger = log4js.getLogger('LeanStorage');
-      logger.error(error);
-      reject();
-    });
+    }
+
+    var queryFailHandler = function (error) {
+      leanStorageLogger.error(error);
+      const body = {};
+      reject({ error: error, statusCode: SERVER_ERROR_CODE, response: null, body: body, data: body });
+    }
+
+    query.first().then(querySuccessHandler, queryFailHandler);
   });
 };
 
-var getTokenFromWechat = function () {
-  var url = wechatConfig.api_domain + '/cgi-bin/token?grant_type=client_credential&appid=' +
-    wechatConfig.appid + '&secret=' + wechatConfig.appsecret;
+var getTokenFromWechat = function (config) {
   return new Promise(function (resolve, reject) {
-    request(url, function (error, response, body) {
-      var result = handWechatResponse(error, response, body);
+    var url = wechatConfig.api_domain + '/cgi-bin/token?grant_type=client_credential&appid=' +
+      config.appid + '&secret=' + config.appsecret;
+    var requestHandler = function (error, response, body) {
+      const data = JSON.parse(body);
+      if (error) {
+        wechatLogger.error(error);
+        reject({ error: error, statusCode: SERVER_ERROR_CODE, response: response, body: body, data: data})
+      } else {
+        reslove({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
+      }
+    }
+
+    request(url, requestHandler);
+  });
+};
+
+var getToken = function (config) {
+  return new Promise(function (resolve, reject) {
+    var getTokenFromWechatSuccessHandler = function (result) {
       resolve(result);
-    });
-  });
-};
+    }
 
-var getToken = function () {
-  return new Promise(function (resolve, reject) {
-    getLastTokenFromDB().then(function (token) {
+    var getTokenFromWechatFailHandler = function (data) {
+      reject(data);
+    }
+
+    var getLastTokenFromDBSuccessHandler = function (token) {
       if (!token || !WechatUtil.isValid(token)) {
-        getTokenFromWechat().then(function (result) {
-          resolve(result);
-        });
+        getTokenFromWechat(config).then(getTokenFromWechatSuccessHandler, getTokenFromWechatFailHandler);
       } else {
         resolve({ error: null, statusCode: SUCCESS_CODE, response: null, data: token });
       }
-    }, function () {
-      getTokenFromWechat().then(function (result) {
-        resolve(result);
-      });
-    });
+    }
+
+    var getLastTokenFromDBFailHandler = function (data) {
+      getTokenFromWechat(config).then(getTokenFromWechatSuccessHandler, getTokenFromWechatFailHandler);
+    }
+
+    getLastTokenFromDB().then(getLastTokenFromDBSuccessHandler, getLastTokenFromDBFailHandler);
   });
 };
 
@@ -125,7 +166,7 @@ var getLastTicketFromDB = function (url) {
   query.equalTo('url', url);
   query.descending('updatedAt');
   return new Promise(function (resolve, reject) {
-    query.first().then(function (ticket) {
+    var querySuccessHandler = function (ticket) {
       if (ticket && ticket._hasData) {
         var formatedTicket = {objectId: ticket.id, createdAt: ticket.createdAt, updatedAt: ticket.updatedAt};
         for (var key in ticket._serverData) {
@@ -135,153 +176,192 @@ var getLastTicketFromDB = function (url) {
         }
         resolve(formatedTicket);
       } else {
-        reject();
+        const body = { 'url': url, errorMessage: 'Not Found' };
+        reject({ error: new Error('Not Fount'), statusCode: NOT_FOUND_CODE, response: null, body: body, data: body });
       }
-    }, function (error) {
-      var logger = log4js.getLogger('LeanStorage');
-      logger.error(error);
-      reject();
-    });
+    }
+
+    var queryFailHandler = function (error) {
+      leanStorageLogger.error(error);
+      const body = { 'url': url };
+      reject({ error: error, statusCode: SERVER_ERROR_CODE, response: null, body: body, data: body });
+    }
+
+    query.first().then(querySuccessHandler, queryFailHandler);
   });
 }
 
-var getTicketFromWechat = function () {
+var getTicketFromWechat = function (config) {
   return new Promise(function (resolve, reject) {
-    getToken().then(function (result) {
-      if (result.response) {
-        var data = result.data;
-        if (data.errcode) {
-          var logger = log4js.getLogger('Wechat');
-          logger.error(data);
-        }
-
-        createToken(data);
-      }
-
+    var getTokenSuccessHandler = function (result) {
+      createToken(token);
       var token = result.data;
       var access_token = token.access_token;
       var url = wechatConfig.api_domain + '/cgi-bin/ticket/getticket?access_token=' + access_token + '&type=jsapi';
-      request(url, function (error, response, body) {
-        var ticketResult = handWechatResponse(error, response, body);
-        if (ticketResult.data) {
-          ticketResult.data.access_token = access_token;
+      var requestHandler = function (error, response, body) {
+        const data = JSON.parse(body);
+        if (error) {
+          wechatLogger.error(error);
+          reject({ error: error, statusCode: SERVER_ERROR_CODE, response: response, body: body, data: data});
+        } else {
+          data.access_token = access_token;
+          reslove({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
         }
-        resolve(ticketResult);
-      });
-    });
+      }
+
+      request(url, requestHandler);
+    }
+
+    var getTokenFailHandler = function (data) {
+      reject(data);
+    }
+
+    getToken(config).then(getTokenSuccessHandler, getTokenFailHandler);
   });
 };
 
-var getTicket = function (url, isdebug) {
+var getTicket = function (url, config, isdebug) {
   return new Promise(function (resolve, reject) {
-    getLastTicketFromDB(url).then(function (ticket) {
+    var getTicketFromWechatSuccessHandler = function (result) {
+      resolve(result);
+    }
+
+    var getTicketFromWechatFailHandler = function (data) {
+      reject(data);
+    }
+
+    var getLastTicketFromDBSuccessHandler = function (ticket) {
       if (!ticket || !WechatUtil.isValid(ticket) || isdebug) {
-        getTicketFromWechat().then(function (result) {
-          resolve(result);
-        });
+        getTicketFromWechat(config).then(getTicketFromWechatSuccessHandler, getTicketFromWechatFailHandler);
       } else {
         resolve({ error: null, statusCode: SUCCESS_CODE, response: null, data: ticket });
       }
-    }, function () {
-      getTicketFromWechat().then(function (result) {
-        resolve(result);
-      });
-    });
+    }
+
+    var getLastTicketFromDBFailHandler = function (data) {
+      getTicketFromWechat(config).then(getTicketFromWechatSuccessHandler, getTicketFromWechatFailHandler);
+    }
+
+    getLastTicketFromDB(url).then(getLastTicketFromDBSuccessHandler, getLastTicketFromDBFailHandler);
   });
 }
 
 router.use('/get_token', function (req, res, next) {
-  // query last token from db, check the token is valid, if not, request from wechat api
-  getToken().then(function (result) {
-    var error = result.error;
-    var response = result.response;
-    var data = result.data;
-    var statusCode = response.statusCode;
+  var appid = req.query.appid;
 
-    if (error) {
-      res.status(statusCode).send(result);
-      return;
-    }
+  var fetchWechatConfigSuccessHandler = function (config) {
+    var getTokenSuccessHandler = function (result) {
+      var error = result.error;
+      var response = result.response;
+      var data = result.data;
+      var statusCode = response.statusCode;
 
-    if (response) {
-      if (data.errcode) {
-        var logger = log4js.getLogger('Wechat');
-        logger.error(data);
-        res.status(SERVER_ERROR_CODE).send({ error: data, statusCode: SERVER_ERROR_CODE, response: response,
-          body: data });
+      if (error) {
+        res.status(statusCode).send(result);
+        return;
       }
 
-      createToken(data).then(function (token) {
-        res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { token: token } });
-      }).catch(next);
-      return;
+      if (response) {
+        if (data.errcode) {
+          wechatLogger.error(data);
+          res.status(SERVER_ERROR_CODE).send({ error: data, statusCode: SERVER_ERROR_CODE, response: response,
+            body: data });
+        }
+
+        createToken(data).then(function (token) {
+          res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { token: token } });
+        }).catch(next);
+        return;
+      }
+
+      if (data) {
+        res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { token: data } });
+      }
     }
 
-    if (data) {
-      res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { token: data } });
+    var getTokenFailHandler = function (data) {
+      res.sendStatus(data.statusCode).send(data);
     }
-  });
+
+    // query last token from db, check the token is valid, if not, request from wechat api
+    getToken(config).then(getTokenSuccessHandler, getTokenFailHandler);
+  }
+
+  var fetchWechatConfigFailHandler = function (data) {
+    res.sendStatus(data.statusCode).send(data);
+  }
+
+  fetchWechatConfig(appid).then(fetchWechatConfigSuccessHandler, fetchWechatConfigFailHandler);
 });
 
 router.get('/get_jssdk_signature', function (req, res, next){
   var url = req.query.url;
-  getTicket(url).then(function (result) {
-    var error = result.error;
-    var response = result.response;
-    var data = result.data;
-    var statusCode = result.statusCode;
+  var appid = req.query.appid;
 
-    if (error) {
-      res.status(statusCode).send(result);
-      return;
-    }
+  var fetchWechatConfigSuccessHandler = function (config) {
+    getTicket(url, config).then(function (result) {
+      var error = result.error;
+      var response = result.response;
+      var data = result.data;
+      var statusCode = result.statusCode;
 
-    if (response) {
-      if (data.errcode) {
-        var logger = log4js.getLogger('Wechat');
-        logger.error(data);
-        res.status(SERVER_ERROR_CODE).send({ error: data, statusCode: SERVER_ERROR_CODE, response: response, body: data });
+      if (error) {
+        res.status(statusCode).send(result);
+        return;
       }
 
-      var current = new Date();
-      var ticketSrc = data.ticket;
-      var noncestr = WechatUtil.createNonceStr();
-      var timestamp = parseInt(current.getTime() / 1000, 10) + '';
-      var signature = WechatUtil.createSignature(ticketSrc, noncestr, timestamp, url);
-      var newTicket = {
-        appid: wechatConfig.appid,
-        ticket: ticketSrc,
-        noncestr: noncestr,
-        timestamp: timestamp,
-        url: url,
-        expires_in: data.expires_in,
-        signature: signature,
-        access_token: data.access_token,
-        create_at: current.toISOString()
-      };
-      var wechatTicket = new WechatTicket();
+      if (response) {
+        if (data.errcode) {
+          wechatLogger.error(data);
+          res.status(SERVER_ERROR_CODE).send({ error: data, statusCode: SERVER_ERROR_CODE, response: response, body: data });
+        }
 
-      wechatTicket.create(newTicket).then(function (ticket) {
+        var current = new Date();
+        var ticketSrc = data.ticket;
+        var noncestr = WechatUtil.createNonceStr();
+        var timestamp = parseInt(current.getTime() / 1000, 10) + '';
+        var signature = WechatUtil.createSignature(ticketSrc, noncestr, timestamp, url);
+        var newTicket = {
+          appid: config.appid,
+          ticket: ticketSrc,
+          noncestr: noncestr,
+          timestamp: timestamp,
+          url: url,
+          expires_in: data.expires_in,
+          signature: signature,
+          access_token: data.access_token,
+          create_at: current.toISOString()
+        };
+        var wechatTicket = new WechatTicket();
 
+        wechatTicket.create(newTicket).then(function (ticket) {
+
+          res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { signature: {
+            appid: ticket.get('appid'),
+            signature: ticket.get('signature'),
+            noncestr: ticket.get('noncestr'),
+            timestamp: ticket.get('timestamp')
+          } } });
+        }).catch(next);
+        return;
+      }
+
+      if (data) {
         res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { signature: {
-          appid: ticket.get('appid'),
-          signature: ticket.get('signature'),
-          noncestr: ticket.get('noncestr'),
-          timestamp: ticket.get('timestamp')
+          appid: typeof data.get === 'function' ? ticket.get('appid') : data.appid,
+          signature: typeof data.get === 'function' ? data.get('signature') : data.signature,
+          noncestr: typeof data.get === 'function' ? data.get('noncestr') : data.noncestr,
+          timestamp: typeof data.get === 'function' ? data.get('timestamp') : data.timestamp
         } } });
-      }).catch(next);
-      return;
-    }
+      }
+    });
+  }
 
-    if (data) {
-      res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { signature: {
-        appid: typeof data.get === 'function' ? ticket.get('appid') : data.appid,
-        signature: typeof data.get === 'function' ? data.get('signature') : data.signature,
-        noncestr: typeof data.get === 'function' ? data.get('noncestr') : data.noncestr,
-        timestamp: typeof data.get === 'function' ? data.get('timestamp') : data.timestamp
-      } } });
-    }
-  });
+  var fetchWechatConfigFailHandler = function (data) {
+    res.sendStatus(data.statusCode).send(data);
+  }
+
+  fetchWechatConfig(appid).then(fetchWechatConfigSuccessHandler, fetchWechatConfigFailHandler);
 });
 
 router.delete('/clear_expires_signature', function(request, response, next) {
@@ -311,8 +391,7 @@ router.delete('/clear_expires_signature', function(request, response, next) {
         response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'Clear expires wechat signature success!' } });
       }, function (error) {
         // 异常处理
-        var logger = log4js.getLogger('LeanStorage');
-        logger.error(error);
+        leanStorageLogger.error(error);
         response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { signatures: signatures } });
       }).catch(next);
     } else {
@@ -320,8 +399,7 @@ router.delete('/clear_expires_signature', function(request, response, next) {
     }
   }, function (error) {
     // 异常处理
-    var logger = log4js.getLogger('LeanStorage');
-    logger.error(error);
+    leanStorageLogger.error(error);
     response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { message: 'Clear expires wechat signature fail!' } });
   }).catch(next);;
 });
