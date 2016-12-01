@@ -62,7 +62,7 @@ var createToken = function (token) {
 var fetchWechatConfig = function (appid) {
   var query = new AV.Query(WechatConfigName);
   query.equalTo('appid', appid);
-  return new Promise(function (reslove, reject) {
+  return new Promise(function (resolve, reject) {
     var querySuccessHandler = function (config) {
       if (config && config._hasData) {
         var wechatConfig = {objectId: config.id, createdAt: config.createdAt, updatedAt: config.updatedAt};
@@ -127,7 +127,7 @@ var getTokenFromWechat = function (config) {
         wechatLogger.error(error);
         reject({ error: error, statusCode: SERVER_ERROR_CODE, response: response, body: body, data: data})
       } else {
-        reslove({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
+        resolve({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
       }
     }
 
@@ -194,8 +194,8 @@ var getLastTicketFromDB = function (url) {
 var getTicketFromWechat = function (config) {
   return new Promise(function (resolve, reject) {
     var getTokenSuccessHandler = function (result) {
-      createToken(token);
       var token = result.data;
+      createToken(token);
       var access_token = token.access_token;
       var url = wechatConfig.api_domain + '/cgi-bin/ticket/getticket?access_token=' + access_token + '&type=jsapi';
       var requestHandler = function (error, response, body) {
@@ -205,7 +205,7 @@ var getTicketFromWechat = function (config) {
           reject({ error: error, statusCode: SERVER_ERROR_CODE, response: response, body: body, data: data});
         } else {
           data.access_token = access_token;
-          reslove({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
+          resolve({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
         }
       }
 
@@ -392,7 +392,7 @@ router.delete('/clear_expires_signature', function(request, response, next) {
       }, function (error) {
         // 异常处理
         leanStorageLogger.error(error);
-        response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { signatures: signatures } });
+        response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { signatures: removeSignatures } });
       }).catch(next);
     } else {
       response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'Clear expires wechat signature success!' } });
@@ -401,6 +401,46 @@ router.delete('/clear_expires_signature', function(request, response, next) {
     // 异常处理
     leanStorageLogger.error(error);
     response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { message: 'Clear expires wechat signature fail!' } });
+  }).catch(next);;
+});
+
+router.delete('/clear_access_token', function(request, response, next) {
+  var current = new Date();
+  var query = new AV.Query(WechatTokenName);
+  query.ascending('updatedAt');
+  query.find().then(function(results) {
+    var removeItems = [];
+    for (var item of results) {
+      if (item && item.updatedAt && (item.get('expires_in') || item._serverData.expires_in)) {
+        var updatedAt = new Date(item.updatedAt).getTime();
+        var currentAt = current.getTime();
+        var expires_in = parseInt(item.get('expires_in') || item._serverData.expires_in, 10);
+
+        if (currentAt > (updatedAt + expires_in * 1000)) {
+          removeItems.push(item);
+        }
+      } else {
+        removeItems.push(item);
+      }
+    }
+
+    if (removeItems.length) {
+      // 批量删除
+      AV.Object.destroyAll(removeItems).then(function () {
+        // 成功
+        response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'Clear expires wechat token success!' } });
+      }, function (error) {
+        // 异常处理
+        leanStorageLogger.error(error);
+        response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { tokens: removeItems } });
+      }).catch(next);
+    } else {
+      response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'Clear expires wechat tokens success!' } });
+    }
+  }, function (error) {
+    // 异常处理
+    leanStorageLogger.error(error);
+    response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { message: 'Clear expires wechat tokens fail!' } });
   }).catch(next);;
 });
 
