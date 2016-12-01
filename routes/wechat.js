@@ -6,6 +6,7 @@ var log4js = require('log4js');
 
 var leanStorageLogger = log4js.getLogger('LeanStorage');
 var wechatLogger = log4js.getLogger('Wechat');
+var apiLogger = log4js.getLogger('Api');
 var wechatConfig = require('../config/wechat');
 var WechatToken = require('../model/WechatToken');
 var WechatTicket = require('../model/WechatTicket');
@@ -16,8 +17,10 @@ var WechatConfigName = CONSTANTS.TableNames.WECHAT_CONFIG_TABLE_NAME;
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
 var NOT_FOUND_CODE = CONSTANTS.StatusCodes.NOT_FOUND;
+var BAD_REQUEST = CONSTANTS.StatusCodes.BAD_REQUEST;
 // var WechatToken = AV.Object.extend(WechatTokenName);
 var WechatUtil = require('../utils/WechatUtil');
+require('../common/global')
 
 //设置跨域访问
 router.all('*', function(req, res, next) {
@@ -79,7 +82,7 @@ var fetchWechatConfig = function (appid) {
     }
 
     var queryFailHandler = function (error) {
-      leanStorageLogger.error(error);
+      leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
       const body = { appid: appid };
       reject({ error: error, statusCode: SERVER_ERROR_CODE, response: null, body: body, data: body });
     }
@@ -108,7 +111,7 @@ var getLastTokenFromDB = function () {
     }
 
     var queryFailHandler = function (error) {
-      leanStorageLogger.error(error);
+      leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
       const body = {};
       reject({ error: error, statusCode: SERVER_ERROR_CODE, response: null, body: body, data: body });
     }
@@ -124,7 +127,7 @@ var getTokenFromWechat = function (config) {
     var requestHandler = function (error, response, body) {
       const data = JSON.parse(body);
       if (error) {
-        wechatLogger.error(error);
+        wechatLogger.error(__file + ' L:' + __line + ' - ', error);
         reject({ error: error, statusCode: SERVER_ERROR_CODE, response: response, body: body, data: data})
       } else {
         resolve({ error: null, statusCode: SUCCESS_CODE, response: response, body: body, data: data });
@@ -182,7 +185,7 @@ var getLastTicketFromDB = function (url) {
     }
 
     var queryFailHandler = function (error) {
-      leanStorageLogger.error(error);
+      leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
       const body = { 'url': url };
       reject({ error: error, statusCode: SERVER_ERROR_CODE, response: null, body: body, data: body });
     }
@@ -201,7 +204,7 @@ var getTicketFromWechat = function (config) {
       var requestHandler = function (error, response, body) {
         const data = JSON.parse(body);
         if (error) {
-          wechatLogger.error(error);
+          wechatLogger.error(__file + ' L:' + __line + ' - ', error);
           reject({ error: error, statusCode: SERVER_ERROR_CODE, response: response, body: body, data: data});
         } else {
           data.access_token = access_token;
@@ -249,6 +252,12 @@ var getTicket = function (url, config, isdebug) {
 router.use('/get_token', function (req, res, next) {
   var appid = req.query.appid;
 
+  if (!appid) {
+    var data = {error: 'appid 不能为空', statusCode: BAD_REQUEST, errors: [], ids: []};
+    apiLogger.error(__file + ' L:' + __line + ' - ', data)
+    res.status(BAD_REQUEST).send(data);
+  }
+
   var fetchWechatConfigSuccessHandler = function (config) {
     var getTokenSuccessHandler = function (result) {
       var error = result.error;
@@ -263,7 +272,7 @@ router.use('/get_token', function (req, res, next) {
 
       if (response) {
         if (data.errcode) {
-          wechatLogger.error(data);
+          wechatLogger.error(__file + ' L:' + __line + ' - ', data);
           res.status(SERVER_ERROR_CODE).send({ error: data, statusCode: SERVER_ERROR_CODE, response: response,
             body: data });
         }
@@ -280,7 +289,7 @@ router.use('/get_token', function (req, res, next) {
     }
 
     var getTokenFailHandler = function (data) {
-      res.sendStatus(data.statusCode).send(data);
+      res.status(data.statusCode).send(data);
     }
 
     // query last token from db, check the token is valid, if not, request from wechat api
@@ -288,7 +297,7 @@ router.use('/get_token', function (req, res, next) {
   }
 
   var fetchWechatConfigFailHandler = function (data) {
-    res.sendStatus(data.statusCode).send(data);
+    res.status(data.statusCode).send(data);
   }
 
   fetchWechatConfig(appid).then(fetchWechatConfigSuccessHandler, fetchWechatConfigFailHandler);
@@ -297,6 +306,20 @@ router.use('/get_token', function (req, res, next) {
 router.get('/get_jssdk_signature', function (req, res, next){
   var url = req.query.url;
   var appid = req.query.appid;
+
+  if (!url) {
+    var data = {error: 'url 不能为空', statusCode: BAD_REQUEST, errors: [], ids: []};
+    apiLogger.error(__file + ' L:' + __line + ' - ', data);
+    res.status(BAD_REQUEST).send(data);
+    return;
+  }
+
+  if (!appid) {
+    var data = {error: 'appid 不能为空', statusCode: BAD_REQUEST, errors: [], ids: []};
+    apiLogger.error(__file + ' L:' + __line + ' - ', data)
+    res.status(BAD_REQUEST).send(data);
+    return;
+  }
 
   var fetchWechatConfigSuccessHandler = function (config) {
     getTicket(url, config).then(function (result) {
@@ -312,7 +335,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
 
       if (response) {
         if (data.errcode) {
-          wechatLogger.error(data);
+          wechatLogger.error(__file + ' L:' + __line + ' - ', data);
           res.status(SERVER_ERROR_CODE).send({ error: data, statusCode: SERVER_ERROR_CODE, response: response, body: data });
         }
 
@@ -358,7 +381,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
   }
 
   var fetchWechatConfigFailHandler = function (data) {
-    res.sendStatus(data.statusCode).send(data);
+    res.status(data.statusCode).send(data);
   }
 
   fetchWechatConfig(appid).then(fetchWechatConfigSuccessHandler, fetchWechatConfigFailHandler);
@@ -391,7 +414,7 @@ router.delete('/clear_expires_signature', function(request, response, next) {
         response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'Clear expires wechat signature success!' } });
       }, function (error) {
         // 异常处理
-        leanStorageLogger.error(error);
+        leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
         response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { signatures: removeSignatures } });
       }).catch(next);
     } else {
@@ -399,7 +422,7 @@ router.delete('/clear_expires_signature', function(request, response, next) {
     }
   }, function (error) {
     // 异常处理
-    leanStorageLogger.error(error);
+    leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
     response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { message: 'Clear expires wechat signature fail!' } });
   }).catch(next);;
 });
@@ -431,7 +454,7 @@ router.delete('/clear_access_token', function(request, response, next) {
         response.send({ error: null, statusCode: SUCCESS_CODE, data: { message: 'Clear expires wechat token success!' } });
       }, function (error) {
         // 异常处理
-        leanStorageLogger.error(error);
+        leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
         response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { tokens: removeItems } });
       }).catch(next);
     } else {
@@ -439,7 +462,7 @@ router.delete('/clear_access_token', function(request, response, next) {
     }
   }, function (error) {
     // 异常处理
-    leanStorageLogger.error(error);
+    leanStorageLogger.error(__file + ' L:' + __line + ' - ', error);
     response.send({ error: error, statusCode: SERVER_ERROR_CODE, data: { message: 'Clear expires wechat tokens fail!' } });
   }).catch(next);;
 });
