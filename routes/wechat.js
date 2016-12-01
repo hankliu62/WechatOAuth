@@ -6,6 +6,7 @@ var log4js = require('log4js');
 
 var leanStorageLogger = log4js.getLogger('LeanStorage');
 var wechatLogger = log4js.getLogger('Wechat');
+var apiLogger = log4js.getLogger('Api');
 var wechatConfig = require('../config/wechat');
 var WechatToken = require('../model/WechatToken');
 var WechatTicket = require('../model/WechatTicket');
@@ -16,6 +17,7 @@ var WechatConfigName = CONSTANTS.TableNames.WECHAT_CONFIG_TABLE_NAME;
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
 var NOT_FOUND_CODE = CONSTANTS.StatusCodes.NOT_FOUND;
+var BAD_REQUEST = CONSTANTS.StatusCodes.BAD_REQUEST;
 // var WechatToken = AV.Object.extend(WechatTokenName);
 var WechatUtil = require('../utils/WechatUtil');
 
@@ -249,6 +251,12 @@ var getTicket = function (url, config, isdebug) {
 router.use('/get_token', function (req, res, next) {
   var appid = req.query.appid;
 
+  if (!appid) {
+    var data = {error: 'appid 不能为空', statusCode: BAD_REQUEST, errors: [], ids: []};
+    apiLogger.error(data)
+    res.status(BAD_REQUEST).send(data);
+  }
+
   var fetchWechatConfigSuccessHandler = function (config) {
     var getTokenSuccessHandler = function (result) {
       var error = result.error;
@@ -280,7 +288,7 @@ router.use('/get_token', function (req, res, next) {
     }
 
     var getTokenFailHandler = function (data) {
-      res.sendStatus(data.statusCode).send(data);
+      res.status(data.statusCode).send(data);
     }
 
     // query last token from db, check the token is valid, if not, request from wechat api
@@ -288,7 +296,7 @@ router.use('/get_token', function (req, res, next) {
   }
 
   var fetchWechatConfigFailHandler = function (data) {
-    res.sendStatus(data.statusCode).send(data);
+    res.status(data.statusCode).send(data);
   }
 
   fetchWechatConfig(appid).then(fetchWechatConfigSuccessHandler, fetchWechatConfigFailHandler);
@@ -297,6 +305,20 @@ router.use('/get_token', function (req, res, next) {
 router.get('/get_jssdk_signature', function (req, res, next){
   var url = req.query.url;
   var appid = req.query.appid;
+
+  if (!url) {
+    var data = {error: 'url 不能为空', statusCode: BAD_REQUEST, errors: [], ids: []};
+    apiLogger.error(data);
+    res.status(BAD_REQUEST).send(data);
+    return;
+  }
+
+  if (!appid) {
+    var data = {error: 'appid 不能为空', statusCode: BAD_REQUEST, errors: [], ids: []};
+    apiLogger.error(data)
+    res.status(BAD_REQUEST).send(data);
+    return;
+  }
 
   var fetchWechatConfigSuccessHandler = function (config) {
     getTicket(url, config).then(function (result) {
@@ -358,7 +380,7 @@ router.get('/get_jssdk_signature', function (req, res, next){
   }
 
   var fetchWechatConfigFailHandler = function (data) {
-    res.sendStatus(data.statusCode).send(data);
+    res.status(data.statusCode).send(data);
   }
 
   fetchWechatConfig(appid).then(fetchWechatConfigSuccessHandler, fetchWechatConfigFailHandler);
