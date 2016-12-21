@@ -1,6 +1,7 @@
 'use strict';
 class HexConverter {
-  static encode (string, base = 16) {
+  static encode (string, base) {
+    base = base || 16;
     if (!string) {
       return ''
     }
@@ -23,6 +24,7 @@ class HexConverter {
       return array
     }
 
+    base = base || 16;
     const hexs = splitByCount(hexStr);
     const chars = hexs.map(hex => String.fromCharCode(parseInt(hex, base)))
     return chars.join('')
