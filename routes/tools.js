@@ -1,12 +1,14 @@
 'use strict';
 var router = require('express').Router();
 var ObjectID = require('bson-objectid');
+var HexConverter = require('../model/HexConverter');
 var CONSTANTS = require('../constants/Constants');
 
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var BAD_REQUEST = CONSTANTS.StatusCodes.BAD_REQUEST;
 var INVALID_PARAMETER = CONSTANTS.StatusCodes.INVALID_PARAMETER;
-var PARAM_TYPES = CONSTANTS.ToolsModule.GENERATOR_PARAM_TYPES
+var PARAM_TYPES = CONSTANTS.ToolsModule.GENERATOR_PARAM_TYPES;
+var HEX_CONVERT_STRING_TYPES = CONSTANTS.ToolsModule.HEX_CONVERT_STRING_TYPES;
 
 function generateObjectId (param) {
   if (param) {
@@ -23,7 +25,7 @@ function generateObjectId (param) {
  * @params code: create bson object arguments.
  * @params number: the count of generate objectId.
  *
- * return { error: null, statusCode: 200, data: { items: ['5859fd347c73221d9c7e4617'] } }
+ * return { statusCode: 200, data: { items: ['5859fd347c73221d9c7e4617'] } }
  */
 router.post('/generate-object-ids', function (req, res, next) {
   var type = req.body.type;
@@ -73,7 +75,7 @@ router.post('/generate-object-ids', function (req, res, next) {
             break;
           case PARAM_TYPES.HEX:
             // todo: to deal with big number
-            param = parseFloat(params[index - 1]);
+            param = HexConverter.decode(params[index - 1]);
             if (!param) {
               throw new Error('Param type should be a 24 character hex string');
             }
@@ -95,10 +97,40 @@ router.post('/generate-object-ids', function (req, res, next) {
 
       objectIds.push(objectId)
     }
-    res.status(SUCCESS_CODE).send({ error: null, statusCode: SUCCESS_CODE, data: { items: objectIds } });
+    res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { items: objectIds } });
   } catch (error) {
     var item = {};
     item[type] = error.toString();
+    res.status(BAD_REQUEST).send({ error: error, statusCode: BAD_REQUEST, messages: [item] });
+  }
+});
+
+/**
+ * Hex encoder and decoder
+ * @params type: ['encode', decode].
+ * @params code: the content of convert hex
+ * @params base: the base number of convert hex
+ *
+ * return { statusCode: 200, data: { result: '736164736164736164' } }
+ */
+router.post('/hex-convert', function (req, res, next) {
+  var type = req.body.type;
+  var code = req.body.code;
+  var base = parseInt(req.body.base || 16, 10);
+
+  if ([HEX_CONVERT_STRING_TYPES.DECODE, HEX_CONVERT_STRING_TYPES.ENCODE].indexOf(type) === -1) {
+    var error = new Error('Invalid parameter of type');
+    var item = { type: error.toString() };
+    res.status(INVALID_PARAMETER).send({ error: error, statusCode: INVALID_PARAMETER, messages: [item] });
+    return;
+  }
+
+  var converter = HexConverter[type];
+  try {
+    var result = converter(code, base);
+    res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { result: result } });
+  } catch (error) {
+    var item = {code: error.toString()};
     res.status(BAD_REQUEST).send({ error: error, statusCode: BAD_REQUEST, messages: [item] });
   }
 });
