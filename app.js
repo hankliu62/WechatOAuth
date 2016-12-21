@@ -8,6 +8,7 @@ var todos = require('./routes/todos');
 var wechat = require('./routes/wechat');
 var jsonp = require('./routes/jsonp');
 var agwebhook = require('./routes/agwebhook');
+var tools = require('./routes/tools');
 var AV = require('leanengine');
 
 var app = express();
@@ -37,6 +38,7 @@ app.get('/', function(req, res) {
 app.use('/todos', todos);
 app.use('/wechat', wechat);
 app.use('/jsonp', jsonp);
+app.use('/api/tools', tools);
 app.use('/agwebhook', agwebhook);
 
 app.use(function(req, res, next) {

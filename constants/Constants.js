@@ -1,9 +1,11 @@
 var TableNames = require('./TableNames');
 var StatusCodes = require('./StatusCodes');
+var ToolsModule = require('./ToolsModule');
 
-const constants = {
+var constants = {
   TableNames: TableNames,
-  StatusCodes: StatusCodes
+  StatusCodes: StatusCodes,
+  ToolsModule: ToolsModule
 };
 
 module.exports = constants;
