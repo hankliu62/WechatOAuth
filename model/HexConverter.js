@@ -12,9 +12,9 @@ class HexConverter {
     }
   }
 
-  static decode (hexStr, base = 16) {
-     function splitByCount (string, count = 2) {
-      const splitRegStr = '.{' + count + '}';
+  static decode (hexStr, base ) {
+     function splitByCount (string, count) {
+      const splitRegStr = '.{' + count || 2 + '}';
       const splitReg = new RegExp(splitRegStr, 'g');
 
       const array = string.match(splitReg) || [];
@@ -25,7 +25,12 @@ class HexConverter {
     }
 
     base = base || 16;
-    const hexs = splitByCount(hexStr);
+    const hexs = splitBy
+    
+    
+    
+    
+    (hexStr);
     const chars = hexs.map(hex => String.fromCharCode(parseInt(hex, base)))
     return chars.join('')
   }
