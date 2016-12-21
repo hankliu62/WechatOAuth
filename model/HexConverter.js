@@ -1,3 +1,4 @@
+'use strict';
 class HexConverter {
   static encode (string, base = 16) {
     if (!string) {
