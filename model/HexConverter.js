@@ -25,12 +25,7 @@ class HexConverter {
     }
 
     base = base || 16;
-    const hexs = splitBy
-    
-    
-    
-    
-    (hexStr);
+    const hexs = splitByCount(hexStr);
     const chars = hexs.map(hex => String.fromCharCode(parseInt(hex, base)))
     return chars.join('')
   }
