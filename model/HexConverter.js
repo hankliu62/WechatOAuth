@@ -12,7 +12,7 @@ class HexConverter {
     }
   }
 
-  static decode (hexStr, base ) {
+  static decode (hexStr, base) {
      function splitByCount (string, count) {
       const splitRegStr = '.{' + (count || 2) + '}';
       const splitReg = new RegExp(splitRegStr, 'g');
