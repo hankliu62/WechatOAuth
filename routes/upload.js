@@ -1,6 +1,12 @@
 'use strict';
 var router = require('express').Router();
 var formidable = require('formidable');
+var log4js = require('log4js');
+var CONSTANTS = require('../constants/Constants');
+
+var uploadLogger = log4js.getLogger('Upload');
+var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
+
 
 //设置跨域访问
 router.all('*', function(req, res, next) {
@@ -23,7 +29,7 @@ router.post('/files', function (req, res, next) {
       nameFragment.splice(length, 0, '.');
     }
     var tempName = nameFragment.join('');
-    res.status(200).json({id: tempName});
+    res.status(SUCCESS_CODE).json({id: tempName});
   });
 });
 

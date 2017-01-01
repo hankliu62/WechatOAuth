@@ -1,9 +1,12 @@
 'use strict';
 var router = require('express').Router();
 var ObjectID = require('bson-objectid');
+var request = require('request');
+var log4js = require('log4js');
 var HexConverter = require('../model/HexConverter');
 var CONSTANTS = require('../constants/Constants');
 
+var toolsLogger = log4js.getLogger('Tools');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var BAD_REQUEST = CONSTANTS.StatusCodes.BAD_REQUEST;
 var INVALID_PARAMETER = CONSTANTS.StatusCodes.INVALID_PARAMETER;
@@ -141,8 +144,45 @@ router.post('/hex-convert', function (req, res, next) {
     res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { result: result } });
   } catch (error) {
     var item = {code: error.toString()};
+    res.status(INVALID_PARAMETER).send({ error: error, statusCode: INVALID_PARAMETER, messages: [item] });
+  }
+});
+
+router.get('/get-file-content', function (req, res, next) {
+  var url = req.query.url;
+  var textContentType = 'text/plain';
+
+  if (!url) {
+    var missUrl = 'Miss url params';
+    var error = new Error(missUrl);
+    toolsLogger.error(__file + ' L:' + __line + ' - ', error);
+    var item = { url: missUrl };
     res.status(BAD_REQUEST).send({ error: error, statusCode: BAD_REQUEST, messages: [item] });
   }
+
+  url = decodeURIComponent(url)
+
+  var requestHandler = function (error, response, body) {
+    if (error) {
+      toolsLogger.error(__file + ' L:' + __line + ' - ', error);
+      var item = { url: error.message };
+      res.status(INVALID_PARAMETER).send(
+        { error: error, statusCode: INVALID_PARAMETER, messages: [item] });
+    } else {
+      if (response.headers['content-type'] === textContentType) {
+        res.set('Content-Type', textContentType);
+        res.status(SUCCESS_CODE).send(body);
+      } else {
+        var urlInvalid = 'The URL you entered is not accessible.';
+        var error = new Error(urlInvalid);
+        toolsLogger.error(__file + ' L:' + __line + ' - ', error);
+        var item = { url: urlInvalid };
+        res.status(INVALID_PARAMETER).send({ error: error, statusCode: INVALID_PARAMETER, messages: [item] });
+      }
+    }
+  }
+
+  request.get(url, requestHandler);
 });
 
 module.exports = router;
