@@ -26,9 +26,29 @@ router.get('/uptoken', function (req, res, next) {
   res.header("Pragma", "no-cache");
   res.header("Expires", 0);
   if (token) {
-      res.json({
-          uptoken: token
-      });
+    res.json({
+        uptoken: token
+    });
+  }
+});
+
+router.get('/get-download-url', function (req, res, next) {
+  var accessKey = req.query.accesskey;
+  //构建私有空间的链接
+  var url = decodeURIComponent(req.query.url);
+
+  qiniu.conf.ACCESS_KEY = accessKey;
+  qiniu.conf.SECRET_KEY = config.SecretKey;
+  var policy = new qiniu.rs.GetPolicy();
+
+  //生成下载链接url
+  var downloadUrl = policy.makeRequest(url);
+
+  if (downloadUrl) {
+    res.header
+    res.json({
+        downloadUrl: downloadUrl
+    });
   }
 });
 

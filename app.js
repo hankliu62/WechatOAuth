@@ -11,6 +11,7 @@ var agwebhook = require('./routes/agwebhook');
 var tools = require('./routes/tools');
 var qiniu = require('./routes/qiniu');
 var upload = require('./routes/upload');
+var files = require('./routes/files');
 var AV = require('leanengine');
 
 var app = express();
@@ -36,14 +37,26 @@ app.get('/', function(req, res) {
   res.render('index', { currentTime: new Date() });
 });
 
-// 可以将一类的路由单独保存在一个文件中
-app.use('/v1/api/todos', todos);
-app.use('/v1/api/wechat', wechat);
-app.use('/v1/api/jsonp', jsonp);
-app.use('/v1/api/tools', tools);
-app.use('/v1/api/agwebhook', agwebhook);
-app.use('/v1/api/qiniu', qiniu);
-app.use('/v1/api/upload', upload);
+var appUserModuleRouters = function (app, moduleRouters) {
+  for (var key in moduleRouters) {
+    if (moduleRouters.hasOwnProperty(key)) {
+      // 可以将一类的路由单独保存在一个文件中
+      app.use('/v1/api/' + key, moduleRouters[key]);
+    }
+  }
+}
+
+var moduleRouters = {
+  todos: todos,
+  wechat: wechat,
+  jsonp: jsonp,
+  tools: tools,
+  agwebhook: agwebhook,
+  qiniu: qiniu,
+  upload: upload,
+  files: files
+};
+appUserModuleRouters(app, moduleRouters);
 
 app.use(function(req, res, next) {
   // 如果任何一个路由都没有返回响应，则抛出一个 404 异常给后续的异常处理器
