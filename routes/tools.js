@@ -62,7 +62,7 @@ router.post('/generate-object-ids', function (req, res, next) {
   }
 
   if (code) {
-    params = code.split(delimiter);
+    params = (code + '').split(delimiter);
   }
 
   var index = 0;
