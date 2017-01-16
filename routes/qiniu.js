@@ -192,4 +192,45 @@ router.post('/upload-image-page', function (req, res, next) {
   });
 });
 
+router.post('/upload-file-page', function (req, res, next) {
+  var content = req.body.content;
+  var file = req.body.file;
+  var accessKey = req.body.accesskey;
+  var bucketName = req.body.bucketname;
+  var filetype = req.body.filetype;
+
+  var data = fs.readFileSync('runtime/template/qrcode/file.html', { encoding: 'utf-8'});
+  var createdFileContent = data.replace('<%= content =%>', content).replace('<%= title =%>', '').replace(
+    /<%= url =%>/g, file.url).replace(/<%= key =%>/g, file.key).replace('<%= filetype =%>', filetype);
+  var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.html';
+  var temporaryFile = 'runtime/temporary/qrcode/' + key;
+  fs.writeFile(temporaryFile, createdFileContent, function (fileError, data) {
+    if (fileError) {
+      qiniuLogger.error(__file + ' L:' + __line + ' - ', fileError);
+      res.status(SERVER_ERROR_CODE).send(
+        { error: fileError, statusCode: SERVER_ERROR_CODE, response: data });
+    } else {
+      var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
+
+      function uploadFile(uptoken, key, localFile) {
+        var extra = new qiniu.io.PutExtra();
+          qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
+            if (qiniuError) {
+              qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
+              res.status(SERVER_ERROR_CODE).send(
+                { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
+            } else {
+              // 上传成功， 处理返回值
+              var url = config.Domain + '/' + ret.key;
+              res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
+              fs.unlink(temporaryFile);
+            }
+        });
+      }
+
+      uploadFile(uptoken, key, temporaryFile);
+    }
+  });
+});
+
 module.exports = router;
