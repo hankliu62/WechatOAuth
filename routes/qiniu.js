@@ -11,6 +11,7 @@ var ObjectUtil = require('../utils/ObjectUtil');
 var CONSTANTS = require('../constants/Constants');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
+var INVALID_PARAMETER = CONSTANTS.StatusCodes.INVALID_PARAMETER;
 
 //设置跨域访问
 router.all('*', function(req, res, next) {
@@ -49,9 +50,7 @@ router.get('/uptoken', function (req, res, next) {
   res.header("Pragma", "no-cache");
   res.header("Expires", 0);
   if (token) {
-    res.json({
-        uptoken: token
-    });
+    res.json({ uptoken: token });
   }
 });
 
@@ -68,9 +67,7 @@ router.get('/get-download-url', function (req, res, next) {
   var downloadUrl = policy.makeRequest(url);
 
   if (downloadUrl) {
-    res.json({
-        downloadUrl: downloadUrl
-    });
+    res.json({ downloadUrl: downloadUrl });
   }
 });
 
@@ -111,7 +108,7 @@ router.post('/upload-base64-image', function (req, res, next) {
       }
     }
   };
-  request(options, requestHandler)
+  request(options, requestHandler);
 });
 
 router.post('/upload-content-page', function (req, res, next) {
@@ -231,6 +228,51 @@ router.post('/upload-file-page', function (req, res, next) {
       uploadFile(uptoken, key, temporaryFile);
     }
   });
+});
+
+router.post('/upload-wechat-page', function (req, res, next) {
+  var url = req.body.url;
+  var accessKey = req.body.accesskey;
+  var bucketName = req.body.bucketname;
+
+  var requestHandler = function (error, response, body) {
+    if (body === '') {
+      res.status(INVALID_PARAMETER).send(
+        { error: null, statusCode: INVALID_PARAMETER, response: { wechatName: '请输入正确的公众微信号' } });
+    } else {
+      request.get(url).pipe(writeFileStream);
+    }
+  }
+
+  var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.png';
+  var temporaryFile = 'runtime/temporary/images/' + key;
+  var writeFileStream = fs.createWriteStream(temporaryFile);
+
+  var writeFileHandler = function () {
+    var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
+
+    function uploadFile(uptoken, key, localFile) {
+      var extra = new qiniu.io.PutExtra();
+        qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
+          if (qiniuError) {
+            qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
+            res.status(SERVER_ERROR_CODE).send(
+              { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
+          } else {
+            // 上传成功， 处理返回值
+            var url = config.Domain + '/' + ret.key;
+            res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
+            fs.unlink(temporaryFile);
+          }
+      });
+    }
+
+    uploadFile(uptoken, key, temporaryFile);
+  }
+
+  writeFileStream.on('close', writeFileHandler);
+
+  request.get(url, requestHandler);
 });
 
 module.exports = router;
