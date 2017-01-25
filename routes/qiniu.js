@@ -238,39 +238,38 @@ router.post('/upload-wechat-page', function (req, res, next) {
   var requestHandler = function (error, response, body) {
     if (body === '') {
       res.status(INVALID_PARAMETER).send(
-        { error: null, statusCode: INVALID_PARAMETER, response: { wechatName: '请输入正确的公众微信号' } });
+        { error: null, statusCode: INVALID_PARAMETER, messages: '请输入正确的公众微信号' });
     } else {
+      var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.jpg';
+      var temporaryFile = 'runtime/temporary/images/' + key;
+      var writeFileStream = fs.createWriteStream(temporaryFile);
+
+      var writeFileHandler = function () {
+        var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
+
+        function uploadFile(uptoken, key, localFile) {
+          var extra = new qiniu.io.PutExtra();
+            qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
+              if (qiniuError) {
+                qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
+                res.status(SERVER_ERROR_CODE).send(
+                  { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
+              } else {
+                fs.unlink(temporaryFile);
+                // 上传成功， 处理返回值
+                var url = config.Domain + '/' + ret.key;
+                res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
+              }
+          });
+        }
+
+        uploadFile(uptoken, key, temporaryFile);
+      }
+      writeFileStream.on('close', writeFileHandler);
+
       request.get(url).pipe(writeFileStream);
     }
   }
-
-  var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.png';
-  var temporaryFile = 'runtime/temporary/images/' + key;
-  var writeFileStream = fs.createWriteStream(temporaryFile);
-
-  var writeFileHandler = function () {
-    var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
-
-    function uploadFile(uptoken, key, localFile) {
-      var extra = new qiniu.io.PutExtra();
-        qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
-          if (qiniuError) {
-            qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
-            res.status(SERVER_ERROR_CODE).send(
-              { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
-          } else {
-            // 上传成功， 处理返回值
-            var url = config.Domain + '/' + ret.key;
-            res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
-            fs.unlink(temporaryFile);
-          }
-      });
-    }
-
-    uploadFile(uptoken, key, temporaryFile);
-  }
-
-  writeFileStream.on('close', writeFileHandler);
 
   request.get(url, requestHandler);
 });
