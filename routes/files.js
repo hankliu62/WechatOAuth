@@ -4,20 +4,13 @@ var formidable = require('formidable');
 var request = require('request');
 var log4js = require('log4js');
 var CONSTANTS = require('../constants/Constants');
+var CrossSiteMiddleware = require('../middleware/CrossSite');
 
 var filesLogger = log4js.getLogger('Files');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 
-
 //设置跨域访问
-router.all('*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, If-Modified-Since");
-  res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");
-  res.header("X-Powered-By",' 3.2.1')
-  res.header("Content-Type", "application/json;charset=utf-8");
-  next();
-});
+router.all('*', CrossSiteMiddleware());
 
 router.post('/upload', function (req, res, next) {
   var form = new formidable.IncomingForm();
@@ -36,11 +29,17 @@ router.post('/upload', function (req, res, next) {
 
 router.get('/download', function (req, res, next) {
   var url = decodeURIComponent(req.query.url);
-  var filename = req.query.filename;
-  res.header('Content-Type', 'application/octet-stream');
-  res.header('Content-Disposition', 'attachment; filename="' + filename + '"');
-  res.header('Content-Transfer-Encoding', 'binary');
-  request.get(url).pipe(res);
+  var filename = decodeURIComponent(req.query.filename);
+  res.set({
+    'Content-type': 'application/octet-stream',
+    'Content-Disposition': 'attachment;filename=' + filename
+  });
+
+  request.get(url).on('data', function (chunk) {
+    res.write(chunk, 'binary');
+  }).on('end', function () {
+    res.end();
+  });
 });
 
 module.exports = router;
