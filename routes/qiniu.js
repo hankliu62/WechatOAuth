@@ -9,19 +9,13 @@ var qiniuLogger = log4js.getLogger('Wechat');
 var StringUtil = require('../utils/StringUtil');
 var ObjectUtil = require('../utils/ObjectUtil');
 var CONSTANTS = require('../constants/Constants');
+var CrossSiteMiddleware = require('../middleware/CrossSite');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var SERVER_ERROR_CODE = CONSTANTS.StatusCodes.SERVER_ERROR;
 var INVALID_PARAMETER = CONSTANTS.StatusCodes.INVALID_PARAMETER;
 
 //设置跨域访问
-router.all('*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, If-Modified-Since");
-  res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");
-  res.header("X-Powered-By",' 3.2.1')
-  res.header("Content-Type", "application/json;charset=utf-8");
-  next();
-});
+router.all('*', CrossSiteMiddleware());
 
 var getQiniuUptoken = function (accessKey, bucketName) {
   qiniu.conf.ACCESS_KEY = accessKey;
