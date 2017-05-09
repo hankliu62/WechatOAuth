@@ -5,7 +5,7 @@ var request = require('request');
 var log4js = require('log4js');
 var HexConverter = require('../model/HexConverter');
 var CONSTANTS = require('../constants/Constants');
-var CrossSiteMiddleware = require('../middleware/CrossSite');
+var CrossSiteMiddleware = require('../middleware/cors');
 
 var toolsLogger = log4js.getLogger('Tools');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;

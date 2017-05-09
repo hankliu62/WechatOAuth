@@ -1,6 +1,6 @@
 'use strict';
 var router = require('express').Router();
-var CrossSiteMiddleware = require('../middleware/CrossSite');
+var CrossSiteMiddleware = require('../middleware/cors');
 
 //设置跨域访问
 router.all('*', CrossSiteMiddleware());
