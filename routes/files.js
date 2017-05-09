@@ -4,7 +4,7 @@ var formidable = require('formidable');
 var request = require('request');
 var log4js = require('log4js');
 var CONSTANTS = require('../constants/Constants');
-var CrossSiteMiddleware = require('../middleware/CrossSite');
+var CrossSiteMiddleware = require('../middleware/cors');
 
 var filesLogger = log4js.getLogger('Files');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;

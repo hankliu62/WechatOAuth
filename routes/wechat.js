@@ -20,7 +20,7 @@ var NOT_FOUND_CODE = CONSTANTS.StatusCodes.NOT_FOUND;
 var BAD_REQUEST = CONSTANTS.StatusCodes.BAD_REQUEST;
 // var WechatToken = AV.Object.extend(WechatTokenName);
 var WechatUtil = require('../utils/WechatUtil');
-var CrossSiteMiddleware = require('../middleware/CrossSite');
+var CrossSiteMiddleware = require('../middleware/cors');
 require('../common/global')
 
 //设置跨域访问

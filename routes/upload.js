@@ -3,7 +3,7 @@ var router = require('express').Router();
 var formidable = require('formidable');
 var log4js = require('log4js');
 var CONSTANTS = require('../constants/Constants');
-var CrossSiteMiddleware = require('../middleware/CrossSite');
+var CrossSiteMiddleware = require('../middleware/cors');
 
 var uploadLogger = log4js.getLogger('Upload');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
