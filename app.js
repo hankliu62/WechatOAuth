@@ -12,6 +12,7 @@ var tools = require('./routes/tools');
 var qiniu = require('./routes/qiniu');
 var upload = require('./routes/upload');
 var files = require('./routes/files');
+var regions = require('./routes/regions');
 var AV = require('leanengine');
 
 var app = express();
@@ -54,7 +55,8 @@ var moduleRouters = {
   agwebhook: agwebhook,
   qiniu: qiniu,
   upload: upload,
-  files: files
+  files: files,
+  regions: regions,
 };
 appUserModuleRouters(app, moduleRouters);
 
