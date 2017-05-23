@@ -3,7 +3,7 @@ var router = require('express').Router();
 var request = require('request');
 var log4js = require('log4js');
 var fs = require('fs');
-var CrossSiteMiddleware = require('../middleware/CrossSite');
+var CrossSiteMiddleware = require('../middleware/cors');
 var CONSTANTS = require('../constants/Constants');
 var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 
