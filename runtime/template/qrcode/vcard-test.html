@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initail-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Miss 小店</title>
+    <link rel="icon" href="http://oiq00n80p.bkt.clouddn.com/favicons_2_16.png" sizes="16x16" type="image/png">
+    <link rel="icon" href="http://oiq00n80p.bkt.clouddn.com/favicons_2_32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="http://oiq00n80p.bkt.clouddn.com/favicons_2_48.png" sizes="48x48" type="image/png">
+    <style>*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{height:100%}body{box-sizing:border-box;min-height:100%;margin:0}ul,ol{margin-top:0;margin-bottom:0}.container{word-wrap:break-word;word-break:break-all}.container .image-link{text-decoration:none;display:block}.container .image-link .image{width:100%}.container .image-title{padding:16px 22px 21px 16px;font-size:24px;color:#000;letter-spacing:0;line-height:38px;text-align:left}.container .content-wrap{padding:0 16px 21px;word-wrap:break-word;font-size:14px;color:#323232;letter-spacing:0;line-height:26px;text-align:left}.container .content-wrap table{width:100%;table-layout:fixed;border-collapse:collapse;border-spacing:0;margin:15px 0}.container .content-wrap table thead{background-color:#f9f9f9}.container .content-wrap table td,.container .content-wrap table th{min-width:40px;height:30px;border:1px solid #ccc;vertical-align:top;padding:2px 4px;text-align:left;box-sizing:border-box}
+    </style>
+  </head>
+  <body class="html-body">
+    <div id="root" class="container">
+      <!-- 基本信息 -->
+      <div class="vcard-module-item vcard-module-item-header">
+        <div class="vcard-header vcard-header-left" style="background-image: url(<%= avatar =%>);">
+        <div class="vcard-avatar">
+          <div class="vcard-avatar-bg image-empty" style="background-image: url(<%= cover =%>);"></div>
+          <div class="vcard-avatar-alt">头像</div>
+        </div>
+        <div class="vcard-career">
+          <div class="vcard-career-name"><%= name =%></div>
+          <div class="vcard-career-appointment"><%= appointment =%></div>
+          <div class="vcard-career-company"><%= company =%></div>
+        </div>
+        </div>
+      </div>
+
+      <!-- 联系信息 -->
+      <div class="vcard-module-item">
+        <div class="vcard-property vcard-tel">
+          <div class="vcard-property-label">固定电话</div>
+          <div class="vcard-property-value"><%= tel =%></div>
+        </div>
+        <div class="vcard-property vcard-phone">
+          <div class="vcard-property-label">移动电话</div>
+          <div class="vcard-property-value"><%= phone =%></div>
+        </div>
+        <div class="vcard-property vcard-fax">
+          <div class="vcard-property-label">传真</div>
+          <div class="vcard-property-value"><%= fax =%></div>
+        </div>
+        <div class="vcard-property vcard-email">
+          <div class="vcard-property-label">电子邮件</div>
+          <div class="vcard-property-value"><%= email =%></div>
+        </div>
+      </div>
+
+      <!-- 社交账号 -->
+      <div class="vcard-module-item">
+        <div class="vcard-property vcard-wechat">
+          <div class="vcard-property-label">微信</div>
+          <div class="vcard-property-value"><%= wechat =%></div>
+        </div>
+        <div class="vcard-property vcard-website">
+          <div class="vcard-property-label">主页网址</div>
+          <div class="vcard-property-value"><%= website =%></div>
+        </div>
+        <div class="vcard-property vcard-weibo">
+          <div class="vcard-property-label">微博</div>
+          <div class="vcard-property-value"><%= weibo =%></div>
+        </div>
+        <div class="vcard-property vcard-qq">
+          <div class="vcard-property-label">QQ</div>
+          <div class="vcard-property-value"><%= qq =%></div>
+        </div>
+      </div>
+
+      <!-- 地址 -->
+      <div class="vcard-module-item ">
+        <div class="vcard-property vcard-address">
+          <div class="vcard-property-label">地址</div>
+          <div class="vcard-property-value"><%= address =%></div>
+        </div>
+      </div>
+
+      <!-- 个人说明 -->
+      <div class="vcard-module-item">
+        <div class="vcard-property vcard-explanation">
+          <div class="vcard-property-label">个人说明</div>
+          <div class="vcard-property-value"><%= explanation =%></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
