@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initail-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Miss 小店</title>
+    <link rel="icon" href="http://oiq00n80p.bkt.clouddn.com/favicons_2_16.png" sizes="16x16" type="image/png">
+    <link rel="icon" href="http://oiq00n80p.bkt.clouddn.com/favicons_2_32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="http://oiq00n80p.bkt.clouddn.com/favicons_2_48.png" sizes="48x48" type="image/png">
+    <style>
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent
+      }
+
+      html {
+        height: 100%;
+        font-size: 16px;
+      }
+
+      body {
+        box-sizing: border-box;
+        margin: 0;
+        min-height: 100%;
+        background-color: #f2f2f6;
+      }
+
+      ol,ul {
+        margin-top: 0;
+        margin-bottom: 0
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .container {
+        word-wrap: break-word;
+        word-break: break-all
+      }
+
+      .absolute-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%)
+      }
+
+      .absolute-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%
+      }
+
+      .absolute-vertical-center {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%)
+      }
+
+      .text-ellipsis {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap
+      }
+
+      .container .vcard-preview-container {
+        font-size: 1em;
+        padding-bottom: 20px;
+      }
+      .container .vcard-preview-container .preview-header {
+        font-size: 0;
+      }
+      .container .vcard-preview-container .preview-header .preview-header-image {
+        width: 100%;
+      }
+      .container .vcard-preview-container .vcard-header {
+        padding: 45px 5px 25px 20px;
+        background-size: cover;
+        background-position: center;
+        color: #fff;
+      }
+      .container .vcard-preview-container .vcard-header .vcard-avatar {
+        height: 100px;
+        width: 100px;
+        position: relative;
+        border-radius: 50%;
+        box-shadow: 0 0 4px #747474;
+      }
+      .container .vcard-preview-container .vcard-header .vcard-avatar .vcard-avatar-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 100%;
+      }
+      .container .vcard-preview-container .vcard-header .vcard-avatar .vcard-avatar-bg.image-empty {
+        background-color: #000;
+        opacity: .4;
+        filter: alpha(opacity=40);
+      }
+      .container .vcard-preview-container .vcard-header .vcard-avatar .vcard-avatar-alt {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .container .vcard-preview-container .vcard-header .vcard-career .vcard-career-name {
+        font-size: 1.5em;
+        margin-bottom: 8px;
+        line-height: 35px;
+      }
+      .container .vcard-preview-container .vcard-header .vcard-career .vcard-career-appointment,
+      .container .vcard-preview-container .vcard-header .vcard-career .vcard-career-company {
+        line-height: 25px;
+      }
+      .container .vcard-preview-container .vcard-header .vcard-career .vcard-career-appointment {
+        margin-bottom: 7px;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-left {
+        display: -webkit-box;
+        display: -moz-box;
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-left .vcard-career {
+        -moz-box-flex: 1;
+        -webkit-box-flex: 1;
+        -ms-box-flex: 1;
+        -o-box-flex: 1;
+        box-flex: 1;
+        -ms-flex: 1;
+        flex: 1;
+        padding-left: 20px;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-left .vcard-career .vcard-career-name,
+      .container .vcard-preview-container .vcard-header.vcard-header-left .vcard-career .vcard-career-appointment,
+      .container .vcard-preview-container .vcard-header.vcard-header-left .vcard-career .vcard-career-company {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 230px;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-middle .vcard-avatar {
+        margin: 0 auto;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-middle .vcard-career .vcard-career-name,
+      .container .vcard-preview-container .vcard-header.vcard-header-middle .vcard-career .vcard-career-appointment,
+      .container .vcard-preview-container .vcard-header.vcard-header-middle .vcard-career .vcard-career-company {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+        text-align: center;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-right {
+        display: -webkit-box;
+        display: -moz-box;
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+        flex-direction: row-reverse;
+        padding: 45px 20px 25px 5px;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-right .vcard-career {
+        -moz-box-flex: 1;
+        -webkit-box-flex: 1;
+        -ms-box-flex: 1;
+        -o-box-flex: 1;
+        box-flex: 1;
+        -ms-flex: 1;
+        flex: 1;
+        padding-right: 20px;
+      }
+      .container .vcard-preview-container .vcard-header.vcard-header-right .vcard-career .vcard-career-name,
+      .container .vcard-preview-container .vcard-header.vcard-header-right .vcard-career .vcard-career-appointment,
+      .container .vcard-preview-container .vcard-header.vcard-header-right .vcard-career .vcard-career-company {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 230px;
+        text-align: right;
+      }
+      .container .vcard-preview-container .vcard-module-item {
+        position: relative;
+        cursor: pointer;
+        padding-left: 20px;
+        background-color: #fff;
+      }
+      .container .vcard-preview-container .vcard-module-item + .vcard-module-item {
+        margin-top: 10px;
+      }
+      .container .vcard-preview-container .vcard-module-item.vcard-module-item-header {
+        padding-left: 0;
+      }
+      .container .vcard-preview-container .vcard-module-item.actived {
+        border-right: 3px solid #27AE60;
+      }
+      .container .vcard-preview-container .vcard-module-item .vcard-property {
+        display: -webkit-box;
+        display: -moz-box;
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+        border-bottom: 1px solid #ddd;
+      }
+      .container .vcard-preview-container .vcard-module-item .vcard-property .vcard-property-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100px;
+        line-height: 40px;
+        color: #999;
+      }
+      .container .vcard-preview-container .vcard-module-item .vcard-property .vcard-property-value {
+        -moz-box-flex: 1;
+        -webkit-box-flex: 1;
+        -ms-box-flex: 1;
+        -o-box-flex: 1;
+        box-flex: 1;
+        -ms-flex: 1;
+        flex: 1;
+        word-break: break-all;
+        word-wrap: break-word;
+        line-height: 16px;
+        padding: 12px 0;
+        color: #333;
+      }
+      .container .vcard-preview-container .vcard-module-item .vcard-property.vcard-explanation .vcard-property-value {
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body class="html-body">
+    <div id="root" class="container">
+      <div class="vcard-preview-container">
+        <div id="iphoneHeader" class="preview-header">
+          <img class="preview-header-image" src="http://oiq00n80p.bkt.clouddn.com/iphone_header.jpg" />
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="vcard-module-item vcard-module-item-header">
+          <div class="vcard-header vcard-header-right" style="background-image: url(http://oiq00n80p.bkt.clouddn.com/vcard_cover_bg31.jpg);">
+          <div class="vcard-avatar">
+            <div class="vcard-avatar-bg image-empty" style="background-image: url(http://oi8brjpnx.bkt.clouddn.com/592b70d144c97f6fadb0d212);"></div>
+          </div>
+          <div class="vcard-career">
+            <div class="vcard-career-name">梁佩云</div>
+            <div class="vcard-career-appointment">梦中女神</div>
+            <div class="vcard-career-company">云汐公司</div>
+          </div>
+          </div>
+        </div>
+
+        <!-- 联系信息 -->
+        <div class="vcard-module-item">
+          <div class="vcard-property vcard-tel">
+            <div class="vcard-property-label">固定电话</div>
+            <div class="vcard-property-value">21321</div>
+          </div>
+          <div class="vcard-property vcard-phone">
+            <div class="vcard-property-label">移动电话</div>
+            <div class="vcard-property-value">324324</div>
+          </div>
+          <div class="vcard-property vcard-fax">
+            <div class="vcard-property-label">传真</div>
+            <div class="vcard-property-value">324324</div>
+          </div>
+          <div class="vcard-property vcard-email">
+            <div class="vcard-property-label">电子邮件</div>
+            <div class="vcard-property-value">123214532@qq.com</div>
+          </div>
+        </div>
+
+        <!-- 社交账号 -->
+        <div class="vcard-module-item">
+          <div class="vcard-property vcard-wechat">
+            <div class="vcard-property-label">微信</div>
+            <div class="vcard-property-value">dfdsaf</div>
+          </div>
+          <div class="vcard-property vcard-website">
+            <div class="vcard-property-label">主页网址</div>
+            <div class="vcard-property-value">dsaf</div>
+          </div>
+          <div class="vcard-property vcard-weibo">
+            <div class="vcard-property-label">微博</div>
+            <div class="vcard-property-value">dsafdsa</div>
+          </div>
+          <div class="vcard-property vcard-qq">
+            <div class="vcard-property-label">QQ</div>
+            <div class="vcard-property-value">2343125423543</div>
+          </div>
+        </div>
+
+        <!-- 地址 -->
+        <div class="vcard-module-item ">
+          <div class="vcard-property vcard-address">
+            <div class="vcard-property-label">地址</div>
+            <div class="vcard-property-value">湖南省, 娄底市, 涟源市, 涟源一中</div>
+          </div>
+        </div>
+
+        <!-- 个人说明 -->
+        <div class="vcard-module-item">
+          <div class="vcard-property vcard-explanation">
+            <div class="vcard-property-label">个人说明</div>
+            <div class="vcard-property-value">好漂亮的一个菇凉，
+我中意的一个菇凉，
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    var ua = window.navigator.userAgent.toLowerCase();
+    var isWeixin = ua.indexOf('micromessenger') != -1;
+    if (isWeixin) {
+      iphoneHeader =document.getElementById("iphoneHeader");
+      if (iphoneHeader) {
+        iphoneHeader.className = iphoneHeader.className + ' hidden';
+      }
+    }
+  </script>
+</html>
