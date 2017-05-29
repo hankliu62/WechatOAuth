@@ -35,6 +35,41 @@ var getQiniuFileUptoken = function (accessKey, bucketName, key) {
   return uptoken;
 }
 
+var uploadFileToQiniu =  function (uptoken, key, temporaryFile) {
+  return function (res) {
+    var extra = new qiniu.io.PutExtra();
+    qiniu.io.putFile(uptoken, key, temporaryFile, extra, function(qiniuError, ret) {
+        if (qiniuError) {
+          qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
+          res.status(SERVER_ERROR_CODE).send(
+            { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
+        } else {
+          // 上传成功， 处理返回值
+          var url = config.Domain + '/' + ret.key;
+          res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
+          fs.unlink(temporaryFile);
+        }
+    });
+  }
+}
+
+var writePageFileToQiniu = function (accessKey, bucketName, contentData) {
+  return function (res) {
+    var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.html';
+    var temporaryFile = 'runtime/temporary/qrcode/' + key;
+    fs.writeFile(temporaryFile, contentData, function (fileError, data) {
+      if (fileError) {
+        qiniuLogger.error(__file + ' L:' + __line + ' - ', fileError);
+        res.status(SERVER_ERROR_CODE).send(
+          { error: fileError, statusCode: SERVER_ERROR_CODE, response: data });
+      } else {
+        var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
+        uploadFileToQiniu(uptoken, key, temporaryFile)(res)(res);
+      }
+    });
+  }
+}
+
 router.get('/uptoken', function (req, res, next) {
   var accessKey = req.query.accesskey;
   var bucketName = req.query.bucketname;
@@ -112,35 +147,7 @@ router.post('/upload-content-page', function (req, res, next) {
 
   var data = fs.readFileSync('runtime/template/qrcode/text.html', { encoding: 'utf-8'});
   var createdFileContent = data.replace('<%= content =%>', content);
-  var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.html';
-  var temporaryFile = 'runtime/temporary/qrcode/' + key;
-  fs.writeFile(temporaryFile, createdFileContent, function (fileError, data) {
-    if (fileError) {
-      qiniuLogger.error(__file + ' L:' + __line + ' - ', fileError);
-      res.status(SERVER_ERROR_CODE).send(
-        { error: fileError, statusCode: SERVER_ERROR_CODE, response: data });
-    } else {
-      var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
-
-      function uploadFile(uptoken, key, localFile) {
-        var extra = new qiniu.io.PutExtra();
-          qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
-            if (qiniuError) {
-              qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
-              res.status(SERVER_ERROR_CODE).send(
-                { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
-            } else {
-              // 上传成功， 处理返回值
-              var url = config.Domain + '/' + ret.key;
-              res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
-              fs.unlink(temporaryFile);
-            }
-        });
-      }
-
-      uploadFile(uptoken, key, temporaryFile);
-    }
-  });
+  writePageFileToQiniu(accessKey, bucketName, createdFileContent)(res);
 });
 
 router.post('/upload-image-page', function (req, res, next) {
@@ -152,35 +159,8 @@ router.post('/upload-image-page', function (req, res, next) {
   var data = fs.readFileSync('runtime/template/qrcode/image.html', { encoding: 'utf-8'});
   var createdFileContent = data.replace('<%= content =%>', content).replace('<%= title =%>', '').replace(
     /<%= url =%>/g, image.url).replace('<%= key =%>', image.key);
-  var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.html';
-  var temporaryFile = 'runtime/temporary/qrcode/' + key;
-  fs.writeFile(temporaryFile, createdFileContent, function (fileError, data) {
-    if (fileError) {
-      qiniuLogger.error(__file + ' L:' + __line + ' - ', fileError);
-      res.status(SERVER_ERROR_CODE).send(
-        { error: fileError, statusCode: SERVER_ERROR_CODE, response: data });
-    } else {
-      var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
 
-      function uploadFile(uptoken, key, localFile) {
-        var extra = new qiniu.io.PutExtra();
-          qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
-            if (qiniuError) {
-              qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
-              res.status(SERVER_ERROR_CODE).send(
-                { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
-            } else {
-              // 上传成功， 处理返回值
-              var url = config.Domain + '/' + ret.key;
-              res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
-              fs.unlink(temporaryFile);
-            }
-        });
-      }
-
-      uploadFile(uptoken, key, temporaryFile);
-    }
-  });
+  writePageFileToQiniu(accessKey, bucketName, createdFileContent)(res);
 });
 
 router.post('/upload-file-page', function (req, res, next) {
@@ -193,35 +173,81 @@ router.post('/upload-file-page', function (req, res, next) {
   var data = fs.readFileSync('runtime/template/qrcode/file.html', { encoding: 'utf-8'});
   var createdFileContent = data.replace('<%= content =%>', content).replace('<%= title =%>', '').replace(
     /<%= url =%>/g, file.url).replace(/<%= key =%>/g, file.key).replace('<%= filetype =%>', filetype);
-  var key = ObjectUtil.generateObjectId(~~(new Date().valueOf() / 1000)) + '.html';
-  var temporaryFile = 'runtime/temporary/qrcode/' + key;
-  fs.writeFile(temporaryFile, createdFileContent, function (fileError, data) {
-    if (fileError) {
-      qiniuLogger.error(__file + ' L:' + __line + ' - ', fileError);
-      res.status(SERVER_ERROR_CODE).send(
-        { error: fileError, statusCode: SERVER_ERROR_CODE, response: data });
-    } else {
-      var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
+  writePageFileToQiniu(accessKey, bucketName, createdFileContent)(res);
+});
 
-      function uploadFile(uptoken, key, localFile) {
-        var extra = new qiniu.io.PutExtra();
-          qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
-            if (qiniuError) {
-              qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
-              res.status(SERVER_ERROR_CODE).send(
-                { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
-            } else {
-              // 上传成功， 处理返回值
-              var url = config.Domain + '/' + ret.key;
-              res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
-              fs.unlink(temporaryFile);
-            }
-        });
-      }
+router.post('/upload-vcard-page', function (req, res, next) {
+  var vcard = req.body.vcard;
+  var accessKey = req.body.accesskey;
+  var bucketName = req.body.bucketname;
+  var filetype = req.body.filetype;
 
-      uploadFile(uptoken, key, temporaryFile);
+  const readFileOptions = { encoding: 'utf-8'}
+
+  var data = fs.readFileSync('runtime/template/qrcode/vcard/vcard.html', readFileOptions);
+  var avatar = vcard.avatar || 'http://oiq00n80p.bkt.clouddn.com/image_hover_default_avatar.png'
+  var vcardBasicTemplate = fs.readFileSync('runtime/template/qrcode/vcard/vcard-module-basic.html', readFileOptions);
+  vcardBasicTemplate = vcardBasicTemplate.replace(/<%= headerLayout =%>/g, vcard.headerLayout).replace(/<%= avatar =%>/g, avatar).replace(
+    /<%= cover =%>/g, vcard.cover.value).replace(/<%= name =%>/g, vcard.name.value).replace(/<%= appointment =%>/g, vcard.appointment.value).replace(
+    /<%= company =%>/g, vcard.company.value)
+  var createdFileContent = data.replace('<%= basic-module =%>', vcardBasicTemplate)
+  var vcardModules = [
+    {
+      name: 'contact',
+      keys: ['tel', 'phone', 'fax', 'email']
+    },
+    {
+      name: 'account',
+      keys: ['wechat', 'website', 'weibo', 'qq']
+    },
+    {
+      name: 'address',
+      keys: ['address']
+    },
+    {
+      name: 'explanation',
+      keys: ['explanation']
+    },
+  ]
+  var contactKeys = ['tel', 'phone', 'fax', 'email']
+  var existPropertiesValue = function (key) {
+    if (key === 'address') {
+      return vcard[key] && vcard[key].value &&
+        (vcard[key].value.province || vcard[key].value.city || vcard[key].value.county || vcard[key].value.town)
     }
-  });
+
+    return vcard[key] && vcard[key].value
+  }
+
+  for (var vcardModule of vcardModules) {
+    var keys = vcardModule.keys
+    var vcardModuleTemplate = ''
+    if (keys.some(existPropertiesValue)) {
+      var vcardPropertyTemplate = fs.readFileSync(`runtime/template/qrcode/vcard/vcard-property.html`, readFileOptions);
+      vcardModuleTemplate = fs.readFileSync(`runtime/template/qrcode/vcard/vcard-module-${vcardModule.name}.html`, readFileOptions);
+      var vcardPropertiesTemplate = ''
+      if (vcardModule.name === 'address') {
+        var address = [vcard.address.value.province, vcard.address.value.city, vcard.address.value.county, vcard.address.value.town].join(', ')
+        for (var key of keys) {
+          if (vcard[key] && vcard[key].value) {
+            vcardPropertiesTemplate += vcardPropertyTemplate.replace(/<%= key =%>/g, key).replace(
+              /<%= name =%>/g, vcard[key].text).replace(/<%= value =%>/g, address)
+          }
+        }
+      } else {
+        for (var key of keys) {
+          if (vcard[key] && vcard[key].value) {
+            vcardPropertiesTemplate += vcardPropertyTemplate.replace(/<%= key =%>/g, key).replace(
+              /<%= name =%>/g, vcard[key].text).replace(/<%= value =%>/g, vcard[key].value)
+          }
+        }
+      }
+      vcardModuleTemplate = vcardModuleTemplate.replace(/<%= properties =%>/g, vcardPropertiesTemplate)
+    }
+    var createdFileContent = createdFileContent.replace(`<%= ${vcardModule.name}-module =%>`, vcardModuleTemplate)
+  }
+
+  writePageFileToQiniu(accessKey, bucketName, createdFileContent)(res);
 });
 
 router.post('/upload-wechat-page', function (req, res, next) {
@@ -240,27 +266,9 @@ router.post('/upload-wechat-page', function (req, res, next) {
 
       var writeFileHandler = function () {
         var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
-
-        function uploadFile(uptoken, key, localFile) {
-          var extra = new qiniu.io.PutExtra();
-            qiniu.io.putFile(uptoken, key, localFile, extra, function(qiniuError, ret) {
-              if (qiniuError) {
-                qiniuLogger.error(__file + ' L:' + __line + ' - ', qiniuError);
-                res.status(SERVER_ERROR_CODE).send(
-                  { error: qiniuError, statusCode: SERVER_ERROR_CODE, response: ret });
-              } else {
-                fs.unlink(temporaryFile);
-                // 上传成功， 处理返回值
-                var url = config.Domain + '/' + ret.key;
-                res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: { url: url } });
-              }
-          });
-        }
-
-        uploadFile(uptoken, key, temporaryFile);
+        uploadFileToQiniu(uptoken, key, temporaryFile)(res);
       }
       writeFileStream.on('close', writeFileHandler);
-
       request.get(url).pipe(writeFileStream);
     }
   }
