@@ -64,7 +64,7 @@ var writePageFileToQiniu = function (accessKey, bucketName, contentData) {
           { error: fileError, statusCode: SERVER_ERROR_CODE, response: data });
       } else {
         var uptoken = getQiniuFileUptoken(accessKey, bucketName, key);
-        uploadFileToQiniu(uptoken, key, temporaryFile)(res)(res);
+        uploadFileToQiniu(uptoken, key, temporaryFile)(res);
       }
     });
   }
