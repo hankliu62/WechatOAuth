@@ -5,21 +5,25 @@ var log4js = require('log4js');
 var fs = require('fs');
 var CrossSiteMiddleware = require('../middleware/cors');
 var CONSTANTS = require('../constants/Constants');
-var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
+var chinaRegions = require('../runtime/template/regions/china-regions.json');
+var internationalRegions = require('../runtime/template/regions/international-regions.json');
 
+var SUCCESS_CODE = CONSTANTS.StatusCodes.SUCCESS;
 var filesLogger = log4js.getLogger('Regions');
 
 //设置跨域访问
 router.all('*', CrossSiteMiddleware());
 
 router.get('/getregions', function (req, res, next) {
-  var data = fs.readFileSync('runtime/template/regions/china-regions.json', { encoding: 'utf-8'});
-  res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: data });
+  // 如果是json文件的话，可以直接使用require方法将文件加载进来，能够有效的利用缓存，二次加载是比每次文件读取要快
+  // var data = fs.readFileSync('runtime/template/regions/china-regions.json', { encoding: 'utf-8'});
+  res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: chinaRegions });
 });
 
 router.get('/getiregions', function (req, res, next) {
-  var data = fs.readFileSync('runtime/template/regions/international-regions.json', { encoding: 'utf-8'});
-  res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: data });
+  // 如果是json文件的话，可以直接使用require方法将文件加载进来，能够有效的利用缓存，二次加载是比每次文件读取要快
+  // var data = fs.readFileSync('runtime/template/regions/international-regions.json', { encoding: 'utf-8'});
+  res.status(SUCCESS_CODE).send({ statusCode: SUCCESS_CODE, data: internationalRegions });
 });
 
 // 爬取微信公众号中群发的区域信息

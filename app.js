@@ -4,15 +4,7 @@ var timeout = require('connect-timeout');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var todos = require('./routes/todos');
-var wechat = require('./routes/wechat');
-var jsonp = require('./routes/jsonp');
-var agwebhook = require('./routes/agwebhook');
-var tools = require('./routes/tools');
-var qiniu = require('./routes/qiniu');
-var upload = require('./routes/upload');
-var files = require('./routes/files');
-var regions = require('./routes/regions');
+var moduleRouters = require('./routes/index');
 var AV = require('leanengine');
 
 var app = express();
@@ -47,17 +39,6 @@ var appUserModuleRouters = function (app, moduleRouters) {
   }
 }
 
-var moduleRouters = {
-  todos: todos,
-  wechat: wechat,
-  jsonp: jsonp,
-  tools: tools,
-  agwebhook: agwebhook,
-  qiniu: qiniu,
-  upload: upload,
-  files: files,
-  regions: regions,
-};
 appUserModuleRouters(app, moduleRouters);
 
 app.use(function(req, res, next) {
